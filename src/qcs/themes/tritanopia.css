@@ -1,0 +1,22 @@
+.root {
+    -fx-background-color: #F0F0F0;
+    -fx-text-fill: #000000;
+}
+
+.button {
+    -fx-background-color: #FF4500; /* Strong red-orange */
+    -fx-text-fill: #FFFFFF;
+}
+
+.label {
+    -fx-text-fill: #FF4500;
+}
+
+.menu-bar {
+    -fx-background-color: #FFC1A1;
+    -fx-text-fill: #000000;
+}
+
+.menu-item {
+    -fx-text-fill: #FF4500;
+}

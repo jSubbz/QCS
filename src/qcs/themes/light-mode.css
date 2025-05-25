@@ -1,17 +1,30 @@
+/* Root background and text */
 .root {
-    -fx-background-color: #FFFFFF;
-    -fx-text-fill: #000000;
+    -fx-background-color: #FFFFFF;  /* Light background */
+    -fx-text-fill: #000000;         /* Dark text */
 }
 
-.button {
-    -fx-background-color: #E0E0E0;
+/* Buttons */
+.button, .gate-button {
+    -fx-background-color: #E0E0E0;   /* Neutral background */
     -fx-text-fill: #000000;
+    -fx-border-color: #B0B0B0;      /* Subtle border */
+    -fx-border-width: 1;
 }
 
+/* Gate buttons on the side panel */
+.gate-button {
+    -fx-background-color: #FFFFFF;   /* Match goal (white buttons) */
+    -fx-text-fill: #000000;
+    -fx-border-color: #000000;
+}
+
+/* Labels */
 .label {
     -fx-text-fill: #000000;
 }
 
+/* Menu bar and items */
 .menu-bar {
     -fx-background-color: #F0F0F0;
     -fx-text-fill: #000000;
@@ -20,9 +33,40 @@
 .menu-item {
     -fx-text-fill: #000000;
 }
-.gate-button {
-    -fx-background-color: #ffffff; /* White button background */
-    -fx-text-fill: #000000;        /* Black text */
-    -fx-border-color: #000000;     /* Black border */
+
+/* Grid cells default style */
+.grid-cell {
+    -fx-border-color: #000000;
     -fx-border-width: 1;
+    -fx-background-color: #F5F5F5;  /* Light gray for empty cells */
+    -fx-text-fill: #000000;
+}
+
+/* Gate-specific styles for grid cells */
+.gate-I, .gate-button-I { -fx-background-color: #FFEB3B; }
+.gate-X, .gate-button-X { -fx-background-color: #F44336; }
+.gate-Y, .gate-button-Y { -fx-background-color: #4CAF50; }
+.gate-Z, .gate-button-Z { -fx-background-color: #2196F3; }
+.gate-H, .gate-button-H { -fx-background-color: #9C27B0; }
+.gate-S, .gate-button-S { -fx-background-color: #FF9800; }
+.gate-T, .gate-button-T { -fx-background-color: #795548; }
+.gate-U, .gate-button-U { -fx-background-color: #00BCD4; }
+.gate-CX, .gate-button-CX { -fx-background-color: #E91E63; }
+.gate-SWAP, .gate-button-SWAP { -fx-background-color: #8BC34A; }
+.gate-CU, .gate-button-CU { -fx-background-color: #FFC107; }
+.gate-CCX, .gate-button-CCX { -fx-background-color: #3F51B5; }
+.gate-BARRIER, .gate-button-BARRIER { -fx-background-color: #BDBDBD; }
+
+
+/* Optional: tweak spinner and input fields if needed */
+.spinner .text-field, .text-field {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #000000;
+    -fx-border-color: #B0B0B0;
+    -fx-border-width: 1;
+}
+
+.combo-box, .combo-box .list-cell, .combo-box-popup .list-view, .combo-box-popup .list-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #000000;
 }

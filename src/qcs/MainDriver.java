@@ -5,6 +5,9 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import java.io.File;
+import java.io.IOException;
+
 public class MainDriver extends Application implements EventBus.EventListener {
     private BorderPane root;
     private Scene scene;
@@ -56,6 +59,17 @@ public class MainDriver extends Application implements EventBus.EventListener {
     }
 
     public static void main(String[] args) {
+        File dir = new File("src/qcs");
+        File[] propertyFiles = dir.listFiles((d, name) -> name.endsWith(".properties"));
+        if (propertyFiles != null) {
+            for (File file : propertyFiles) {
+                try {
+                    PropertiesValidator.checkForDuplicateKeys(file.getPath());
+                } catch (IOException e) {
+                    System.err.println("Error reading " + file.getPath() + ": " + e.getMessage());
+                }
+            }
+        }
         launch(args);
     }
 }

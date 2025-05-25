@@ -1,22 +1,27 @@
-.root {
-    -fx-background-color: #F0F0F0;
-    -fx-text-fill: #000000;
+.root { -fx-background-color: #F0F0F0; -fx-text-fill: #000000; }
+
+.button, .gate-button {
+    -fx-background-color: #3366CC; 
+    -fx-text-fill: #000000; 
+    -fx-border-color: #000000; 
 }
 
-.button {
-    -fx-background-color: #1E90FF; /* Strong blue */
-    -fx-text-fill: #FFFFFF;
+.label, .menu-item, .menu-bar, .menu, .context-menu {
+    -fx-text-fill: #000000; 
 }
 
-.label {
-    -fx-text-fill: #1E90FF;
+.menu-bar { -fx-background-color: #BFD9FF; }
+.menu-item, .menu-item:focused, .menu-item:hover { -fx-background-color: #BFD9FF; }
+
+.grid-cell {
+    -fx-background-color: #AFCFFF;
+    -fx-border-color: #000000; -fx-border-width: 1; -fx-text-fill: #000000;
 }
 
-.menu-bar {
-    -fx-background-color: #AFCBFF;
-    -fx-text-fill: #000000;
+.spinner .text-field, .text-field {
+    -fx-background-color: #FFFFFF; -fx-text-fill: #000000; -fx-border-color: #000000;
 }
 
-.menu-item {
-    -fx-text-fill: #1E90FF;
+.combo-box, .combo-box .list-cell, .combo-box-popup .list-view, .combo-box-popup .list-cell {
+    -fx-background-color: #FFFFFF; -fx-text-fill: #000000; -fx-border-color: #000000; -fx-border-width: 1;
 }

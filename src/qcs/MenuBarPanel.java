@@ -30,9 +30,9 @@ public class MenuBarPanel implements EventBus.EventListener {
         MenuItem settingsWindowItem = new MenuItem(bundle.getString("menuSettingsWindow"));
         settingsWindowItem.setOnAction(e -> new SettingsWindow().show());
 
-        // Correct formatting for ResourceBundle with {0}
-        String mode = SettingsManager.getInstance().isDesignMode() ? "Design" : "Play";
-        toggleModeItem = new MenuItem(MessageFormat.format(bundle.getString("menuToggleMode"), mode));
+        // 🔸 Correct formatting to show target mode (Play if currently Design, and vice versa)
+        String targetMode = SettingsManager.getInstance().isDesignMode() ? bundle.getString("playMode") : bundle.getString("designMode");
+        toggleModeItem = new MenuItem(MessageFormat.format(bundle.getString("menuToggleMode"), targetMode));
         toggleModeItem.setOnAction(e -> {
             SettingsManager.getInstance().toggleMode();
             EventBus.getInstance().publish("modeToggled");

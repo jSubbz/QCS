@@ -1,22 +1,40 @@
 .root {
     -fx-background-color: #F0F0F0;
-    -fx-text-fill: #000000;
+    -fx-text-fill: #000000;  /* Black text globally */
 }
 
-.button {
-    -fx-background-color: #FF8C00; /* Strong orange */
-    -fx-text-fill: #000000;
+.button, .gate-button {
+    -fx-background-color: #FF9933;  /* Strong orange for buttons */
+    -fx-text-fill: #000000;         /* Black text */
+    -fx-border-color: #000000;
 }
 
-.label {
-    -fx-text-fill: #FF8C00;
+.label, .menu-item, .menu, .menu-bar, .context-menu {
+    -fx-text-fill: #000000;  /* Explicit black text for all labels and menu items */
 }
 
 .menu-bar {
-    -fx-background-color: #FFDAB9;
+    -fx-background-color: #FFD9B3;
+}
+
+.menu-item, .menu-item:focused, .menu-item:hover {
+    -fx-background-color: #FFD9B3;
+}
+
+.grid-cell {
+    -fx-background-color: #FFE5CC;
+    -fx-border-color: #000000;
+    -fx-border-width: 1;
     -fx-text-fill: #000000;
 }
 
-.menu-item {
-    -fx-text-fill: #FF8C00;
+.spinner .text-field, .text-field {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #000000;
+    -fx-border-color: #000000;
+}
+
+.combo-box, .combo-box .list-cell, .combo-box-popup .list-view, .combo-box-popup .list-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #000000;
 }

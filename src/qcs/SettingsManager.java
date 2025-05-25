@@ -24,6 +24,7 @@ public class SettingsManager {
 
     public void setLanguage(String lang) {
         currentLanguage = lang;
+        EventBus.getInstance().publish("languageChanged");  // 🔥 Notify UI components
     }
 
     public String getTheme() {

@@ -16,6 +16,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     private String selectedGate = null;
 
     public QuantumCircuitPanel() {
+        var bundle = SettingsManager.getInstance().getBundle();
+
         // Create the label and grid
         Label gridLabel = new Label("Quantum Circuit");
         gridLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
@@ -26,34 +28,31 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         gridPane.setStyle("-fx-background-color: #FFFFFF;");
         GridPane.setHgrow(gridPane, Priority.ALWAYS);
         GridPane.setVgrow(gridPane, Priority.ALWAYS);
-
-        // Allow grid to fully expand
         gridPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        // Create a container for the grid
         BorderPane gridContainer = new BorderPane();
         gridContainer.setTop(gridLabel);
         BorderPane.setAlignment(gridLabel, Pos.CENTER);
         gridContainer.setCenter(gridPane);
 
-        // Resize controls
+        // Resize controls with localization
         qubitsSpinner = new Spinner<>(1, 10, qubits);
         stepsSpinner = new Spinner<>(1, 20, steps);
-        resizeButton = new Button("Resize");
+        resizeButton = new Button(bundle.getString("resize"));
         resizeButton.setOnAction(e -> {
             qubits = qubitsSpinner.getValue();
             steps = stepsSpinner.getValue();
             drawGrid();
-            if (bottomPanel != null) bottomPanel.updateStatus("Resized to " + qubits + " qubits and " + steps + " steps.");
+            if (bottomPanel != null) bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
         });
         HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
         resizeControls.setAlignment(Pos.CENTER);
         resizeControls.setPadding(new Insets(10));
 
-        // Additional action buttons
-        newCircuitButton = new Button("New Circuit");
-        stepButton = new Button("Step");
-        resetButton = new Button("Reset");
+        // Additional action buttons with localization
+        newCircuitButton = new Button(bundle.getString("newCircuit"));
+        stepButton = new Button(bundle.getString("step"));
+        resetButton = new Button(bundle.getString("reset"));
         HBox actionButtons = new HBox(10, newCircuitButton, stepButton, resetButton);
         actionButtons.setAlignment(Pos.CENTER);
         actionButtons.setPadding(new Insets(10));
@@ -114,7 +113,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
     public void updateUI() {
-        resizeButton.setText("Resize");
+        var bundle = SettingsManager.getInstance().getBundle();
+        resizeButton.setText(bundle.getString("resize"));
+        newCircuitButton.setText(bundle.getString("newCircuit"));
+        stepButton.setText(bundle.getString("step"));
+        resetButton.setText(bundle.getString("reset"));
     }
 
     public BorderPane getPanel() {

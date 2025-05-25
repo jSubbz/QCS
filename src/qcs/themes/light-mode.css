@@ -43,19 +43,19 @@
 }
 
 /* Gate-specific styles for grid cells */
-.gate-I, .gate-button-I { -fx-background-color: #FFEB3B; }
-.gate-X, .gate-button-X { -fx-background-color: #F44336; }
-.gate-Y, .gate-button-Y { -fx-background-color: #4CAF50; }
-.gate-Z, .gate-button-Z { -fx-background-color: #2196F3; }
-.gate-H, .gate-button-H { -fx-background-color: #9C27B0; }
-.gate-S, .gate-button-S { -fx-background-color: #FF9800; }
-.gate-T, .gate-button-T { -fx-background-color: #795548; }
-.gate-U, .gate-button-U { -fx-background-color: #00BCD4; }
-.gate-CX, .gate-button-CX { -fx-background-color: #E91E63; }
-.gate-SWAP, .gate-button-SWAP { -fx-background-color: #8BC34A; }
-.gate-CU, .gate-button-CU { -fx-background-color: #FFC107; }
-.gate-CCX, .gate-button-CCX { -fx-background-color: #3F51B5; }
-.gate-BARRIER, .gate-button-BARRIER { -fx-background-color: #BDBDBD; }
+.gate-I, .gate-button-I { -fx-background-color: #FFFFB0; }
+.gate-X, .gate-button-X { -fx-background-color: #FFB9B8; }
+.gate-Y, .gate-button-Y { -fx-background-color: #D8FFC4; }
+.gate-Z, .gate-button-Z { -fx-background-color: #D8D4FF; }
+.gate-H, .gate-button-H { -fx-background-color: #C4E9FF; }
+.gate-S, .gate-button-S { -fx-background-color: #F7D4FF; }
+.gate-T, .gate-button-T { -fx-background-color: #FFF0BA; }
+.gate-U, .gate-button-U { -fx-background-color: #FFCBA6; }
+.gate-CX, .gate-button-CX { -fx-background-color: #FFDCD6; }
+.gate-SWAP, .gate-button-SWAP { -fx-background-color: #E3FFE8; }
+.gate-CU, .gate-button-CU { -fx-background-color: #FF99FF; }
+.gate-CCX, .gate-button-CCX { -fx-background-color: #E2CCFF; }
+.gate-BARRIER, .gate-button-BARRIER { -fx-background-color: #F0F1FF; }
 
 
 /* Optional: tweak spinner and input fields if needed */
@@ -69,4 +69,9 @@
 .combo-box, .combo-box .list-cell, .combo-box-popup .list-view, .combo-box-popup .list-cell {
     -fx-background-color: #FFFFFF;
     -fx-text-fill: #000000;
+}
+
+.combo-box, .combo-box .list-cell, .combo-box-popup .list-view, .combo-box-popup .list-cell {
+    -fx-border-color: #000000;   /* Black outline */
+    -fx-border-width: 1;
 }

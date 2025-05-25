@@ -1,4 +1,6 @@
 package qcs;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import qcs.EventBus;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -29,9 +31,12 @@ public class MainDriver extends Application implements EventBus.EventListener {
         root.setLeft(leftPanel.getPanel());
 
         BottomPanel bottomPanel = new BottomPanel();
+        VBox bottomAreaMainPanel = bottomPanel.getPanel();
+
         root.setBottom(bottomPanel.getPanel());
 
-        scene = new Scene(root, 900, 600);
+        scene = new Scene(root, 900, 750);
+        bottomAreaMainPanel.prefHeightProperty().bind(scene.heightProperty().multiply(.2)); //Defining max height of the message box
         applyTheme();
 
         primaryStage.setTitle("QCS Refactored");

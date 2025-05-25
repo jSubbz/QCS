@@ -12,6 +12,7 @@ public class MainDriver extends Application implements EventBus.EventListener {
     private BorderPane root;
     private Scene scene;
     private MenuBarPanel menuBarPanel;
+    private QuantumCircuitPanel quantumCircuitPanel;  // Moved to field if needed elsewhere
 
     @Override
     public void start(Stage primaryStage) {
@@ -19,10 +20,10 @@ public class MainDriver extends Application implements EventBus.EventListener {
 
         root = new BorderPane();
 
-        menuBarPanel = new MenuBarPanel();
+        quantumCircuitPanel = new QuantumCircuitPanel();  // Instantiate this first
+        menuBarPanel = new MenuBarPanel(quantumCircuitPanel);  // Now pass it here
         root.setTop(menuBarPanel.getMenuBar());
 
-        QuantumCircuitPanel quantumCircuitPanel = new QuantumCircuitPanel();
         root.setCenter(quantumCircuitPanel.getPanel());
 
         LeftPanel leftPanel = new LeftPanel();

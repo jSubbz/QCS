@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import java.io.*;
 
 public class QuantumCircuitPanel implements EventBus.EventListener {
     private BorderPane panel;
@@ -14,6 +15,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     private BottomPanel bottomPanel;
     private int qubits = 3, steps = 5;
     private String selectedGate = null;
+    private Button[][] cellButtons;  // Track buttons in grid
 
     public QuantumCircuitPanel() {
         var bundle = SettingsManager.getInstance().getBundle();
@@ -43,7 +45,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             qubits = qubitsSpinner.getValue();
             steps = stepsSpinner.getValue();
             drawGrid();
-            if (bottomPanel != null) bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
+            if (bottomPanel != null)
+                bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
         });
         HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
         resizeControls.setAlignment(Pos.CENTER);
@@ -77,6 +80,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         gridPane.getColumnConstraints().clear();
         gridPane.getRowConstraints().clear();
 
+        cellButtons = new Button[qubits][steps];  // Initialize button tracker
+
         for (int c = 0; c < steps; c++) {
             ColumnConstraints cc = new ColumnConstraints();
             cc.setPercentWidth(100.0 / steps);
@@ -105,9 +110,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                     } else {
                         cell.setText("");
                     }
-                    if (bottomPanel != null) bottomPanel.updateStatus((selectedGate != null ? selectedGate : "Cleared") + " at " + finalR + "," + finalC);
+                    if (bottomPanel != null)
+                        bottomPanel.updateStatus((selectedGate != null ? selectedGate : "Cleared") + " at " + finalR + "," + finalC);
                 });
                 gridPane.add(cell, c, r);
+                cellButtons[r][c] = cell;  // Store cell reference
             }
         }
     }
@@ -134,6 +141,77 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             selectedGate = eventType.substring("gateSelected:".length());
         } else if ("languageChanged".equals(eventType)) {
             updateUI();
+        }
+    }
+
+    /** Checks if any cell is active (non-empty text). */
+    public boolean hasActiveCells() {
+        if (cellButtons == null) return false;
+        for (int r = 0; r < qubits; r++) {
+            for (int c = 0; c < steps; c++) {
+                if (!cellButtons[r][c].getText().isEmpty()) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Clears all cells in the grid. */
+    public void clearGrid() {
+        if (cellButtons == null) return;
+        for (int r = 0; r < qubits; r++) {
+            for (int c = 0; c < steps; c++) {
+                Button cell = cellButtons[r][c];
+                cell.setText("");
+                cell.getStyleClass().removeIf(style -> style.startsWith("gate-"));
+                cell.setStyle("");
+            }
+        }
+    }
+
+    /** Saves the pattern to a file. */
+    public void savePatternToFile(File file) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(qubits + "," + steps + "\n");  // Save dimensions
+            for (int r = 0; r < qubits; r++) {
+                for (int c = 0; c < steps; c++) {
+                    String text = cellButtons[r][c].getText();
+                    if (!text.isEmpty()) {
+                        writer.write(r + "," + c + "," + text + "\n");
+                    }
+                }
+            }
+            System.out.println("Pattern saved to " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads a pattern from a file and updates the grid. */
+    public void loadPatternFromFile(File file) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line = reader.readLine();
+            String[] dims = line.split(",");
+            int loadedQubits = Integer.parseInt(dims[0]);
+            int loadedSteps = Integer.parseInt(dims[1]);
+
+            qubits = loadedQubits;
+            steps = loadedSteps;
+            qubitsSpinner.getValueFactory().setValue(qubits);
+            stepsSpinner.getValueFactory().setValue(steps);
+            drawGrid();  // Rebuild grid with new size
+
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                int r = Integer.parseInt(parts[0]);
+                int c = Integer.parseInt(parts[1]);
+                String gate = parts[2];
+                Button cell = cellButtons[r][c];
+                cell.setText(gate);
+                cell.getStyleClass().add("gate-" + gate);
+            }
+            System.out.println("Pattern loaded from " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

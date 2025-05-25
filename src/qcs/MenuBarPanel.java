@@ -1,14 +1,11 @@
 package qcs;
-import qcs.EventBus;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SeparatorMenuItem;
+
+import javafx.scene.control.*;
+import java.text.MessageFormat;
 
 public class MenuBarPanel implements EventBus.EventListener {
     private MenuBar menuBar;
     private MenuItem toggleModeItem;
-    private SettingsWindow settingsWindow;
 
     public MenuBarPanel() {
         rebuildMenuBar();
@@ -32,10 +29,14 @@ public class MenuBarPanel implements EventBus.EventListener {
         Menu settingsMenu = new Menu(bundle.getString("menuSettings"));
         MenuItem settingsWindowItem = new MenuItem(bundle.getString("menuSettingsWindow"));
         settingsWindowItem.setOnAction(e -> new SettingsWindow().show());
-        toggleModeItem = new MenuItem(String.format(bundle.getString("menuToggleMode"), SettingsManager.getInstance().isDesignMode() ? "Design" : "Play"));
+
+        // Correct formatting for ResourceBundle with {0}
+        String mode = SettingsManager.getInstance().isDesignMode() ? "Design" : "Play";
+        toggleModeItem = new MenuItem(MessageFormat.format(bundle.getString("menuToggleMode"), mode));
         toggleModeItem.setOnAction(e -> {
             SettingsManager.getInstance().toggleMode();
             EventBus.getInstance().publish("modeToggled");
+            System.out.println("Toggled to " + (SettingsManager.getInstance().isDesignMode() ? "Design" : "Play") + " mode.");
         });
         settingsMenu.getItems().addAll(settingsWindowItem, toggleModeItem);
 

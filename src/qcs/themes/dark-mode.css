@@ -111,3 +111,21 @@
     -fx-border-color: #000000;   /* Black outline */
     -fx-border-width: 1;
 }
+.settings-window {
+    -fx-background-color: #2C2F33;
+    -fx-text-fill: #FFFFFF;
+}
+
+.settings-window .label, .settings-window .radio-button {
+    -fx-text-fill: #FFFFFF;
+}
+
+.settings-window .radio-button:selected {
+    -fx-mark-color: #7289DA;
+}
+
+.settings-window .combo-box, .settings-window .combo-box .list-cell {
+    -fx-background-color: #40444B;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #7289DA;
+}

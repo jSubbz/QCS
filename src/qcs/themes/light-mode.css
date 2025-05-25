@@ -75,3 +75,21 @@
     -fx-border-color: #000000;   /* Black outline */
     -fx-border-width: 1;
 }
+.settings-window {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #000000;
+}
+
+.settings-window .label, .settings-window .radio-button {
+    -fx-text-fill: #000000;
+}
+
+.settings-window .radio-button:selected {
+    -fx-mark-color: #000000;
+}
+
+.settings-window .combo-box, .settings-window .combo-box .list-cell {
+    -fx-background-color: #E0E0E0;
+    -fx-text-fill: #000000;
+    -fx-border-color: #B0B0B0;
+}

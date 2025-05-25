@@ -1,7 +1,10 @@
 package qcs;
+
 import qcs.EventBus;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.Properties;
+import java.io.*;
 
 public class SettingsManager {
     private static SettingsManager instance;
@@ -9,7 +12,12 @@ public class SettingsManager {
     private String currentTheme = "dark-mode";
     private boolean designMode = true;
 
-    private SettingsManager() {}
+    private static final String CONFIG_FILE = "settings.properties";
+    private final Properties props = new Properties();
+
+    private SettingsManager() {
+        loadSettings();
+    }
 
     public static SettingsManager getInstance() {
         if (instance == null) {
@@ -24,7 +32,9 @@ public class SettingsManager {
 
     public void setLanguage(String lang) {
         currentLanguage = lang;
-        EventBus.getInstance().publish("languageChanged");  // 🔥 Notify UI components
+        props.setProperty("language", lang);
+        saveSettings();
+        EventBus.getInstance().publish("languageChanged");
     }
 
     public String getTheme() {
@@ -33,6 +43,9 @@ public class SettingsManager {
 
     public void setTheme(String theme) {
         currentTheme = theme;
+        props.setProperty("theme", theme);
+        saveSettings();
+        EventBus.getInstance().publish("themeChanged");
     }
 
     public boolean isDesignMode() {
@@ -41,9 +54,28 @@ public class SettingsManager {
 
     public void toggleMode() {
         designMode = !designMode;
+        EventBus.getInstance().publish("modeToggled");
     }
 
     public ResourceBundle getBundle() {
         return ResourceBundle.getBundle("qcs.messages", new Locale(currentLanguage));
+    }
+
+    private void loadSettings() {
+        try (FileReader reader = new FileReader(CONFIG_FILE)) {
+            props.load(reader);
+            currentLanguage = props.getProperty("language", "en");
+            currentTheme = props.getProperty("theme", "dark-mode");
+        } catch (IOException e) {
+            System.out.println("Settings file not found, using defaults.");
+        }
+    }
+
+    private void saveSettings() {
+        try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
+            props.store(writer, "User Settings");
+        } catch (IOException e) {
+            System.err.println("Error saving settings: " + e.getMessage());
+        }
     }
 }

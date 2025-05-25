@@ -3,9 +3,7 @@ package qcs;
 import qcs.EventBus;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -13,96 +11,116 @@ import javafx.stage.Stage;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class SettingsWindow {
+public class SettingsWindow implements EventBus.EventListener {
     private static final List<String> AVAILABLE_LANGUAGES = List.of("en", "de", "fr");
-    private static final List<String> AVAILABLE_THEME_CODES = List.of(
+    private static final List<String> AVAILABLE_THEMES = List.of(
             "dark-mode", "light-mode", "protanopia", "deuteranopia", "tritanopia", "achromatopsia"
     );
 
-    public void show() {
-        Stage stage = new Stage();
-        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
-        stage.setTitle(bundle.getString("settingsWindowTitle"));
+    private Stage stage;
+    private VBox layout;
+    private Scene scene;
+    private ToggleGroup languageGroup;
+    private ToggleGroup themeGroup;
+    private Label languageLabel;
+    private Label themeLabel;
 
-        VBox layout = new VBox(10);
+    public SettingsWindow() {
+        EventBus.getInstance().subscribe(this); // Subscribe to events
+    }
+
+    public void show() {
+        stage = new Stage();
+        layout = new VBox(10);
         layout.setPadding(new Insets(10));
 
-        // 🔸 Language ComboBox (exclude current)
-        Label languageLabel = new Label(bundle.getString("selectLanguage"));
-        ComboBox<String> languageCombo = new ComboBox<>();
-        String currentLanguage = SettingsManager.getInstance().getLanguage();
-        AVAILABLE_LANGUAGES.stream()
-                .filter(lang -> !lang.equals(currentLanguage))
-                .forEach(languageCombo.getItems()::add);
-        if (!languageCombo.getItems().isEmpty()) {
-            languageCombo.setValue(languageCombo.getItems().get(0));
-        }
+        updateUI(); // Build UI elements based on the current settings
 
-        // 🔸 Language Apply Button
-        Button applyLanguageButton = new Button(bundle.getString("apply"));
-        applyLanguageButton.setOnAction(e -> {
-            if (!languageCombo.getItems().isEmpty()) {
-                SettingsManager.getInstance().setLanguage(languageCombo.getValue());
-                EventBus.getInstance().publish("languageChanged");
-            }
-            stage.close();
-        });
-
-        // 🔸 Theme ComboBox (exclude current)
-        Label themeLabel = new Label(bundle.getString("selectTheme"));
-        ComboBox<String> themeCombo = new ComboBox<>();
-        String currentTheme = SettingsManager.getInstance().getTheme();
-        AVAILABLE_THEME_CODES.stream()
-                .filter(themeCode -> !themeCode.equals(currentTheme))
-                .map(themeCode -> switch (themeCode) {
-                    case "dark-mode" -> bundle.getString("themeDark");
-                    case "light-mode" -> bundle.getString("themeLight");
-                    case "protanopia" -> bundle.getString("themeProtanopia");
-                    case "deuteranopia" -> bundle.getString("themeDeuteranopia");
-                    case "tritanopia" -> bundle.getString("themeTritanopia");
-                    case "achromatopsia" -> bundle.getString("themeAchromatopsia");
-                    default -> themeCode;
-                })
-                .forEach(themeCombo.getItems()::add);
-        if (!themeCombo.getItems().isEmpty()) {
-            themeCombo.setValue(themeCombo.getItems().get(0));
-        }
-
-        // 🔸 Theme Apply Button
-        Button applyThemeButton = new Button(bundle.getString("apply"));
-        applyThemeButton.setOnAction(e -> {
-            if (!themeCombo.getItems().isEmpty()) {
-                String selectedThemeLabel = themeCombo.getValue();
-                String newThemeCode = AVAILABLE_THEME_CODES.stream()
-                        .filter(code -> selectedThemeLabel.equals(switch (code) {
-                            case "dark-mode" -> bundle.getString("themeDark");
-                            case "light-mode" -> bundle.getString("themeLight");
-                            case "protanopia" -> bundle.getString("themeProtanopia");
-                            case "deuteranopia" -> bundle.getString("themeDeuteranopia");
-                            case "tritanopia" -> bundle.getString("themeTritanopia");
-                            case "achromatopsia" -> bundle.getString("themeAchromatopsia");
-                            default -> code;
-                        }))
-                        .findFirst()
-                        .orElse(currentTheme);
-                SettingsManager.getInstance().setTheme(newThemeCode);
-                EventBus.getInstance().publish("themeChanged");
-            }
-            stage.close();
-        });
-
-        // 🔸 Layout
-        layout.getChildren().addAll(
-                languageLabel, languageCombo, applyLanguageButton,
-                themeLabel, themeCombo, applyThemeButton
-        );
-
-        Scene scene = new Scene(layout, 300, 300);
-        scene.getStylesheets().add(getClass().getResource("themes/" + currentTheme + ".css").toExternalForm());
+        scene = new Scene(layout, 300, 400);
+        scene.getStylesheets().add(getClass().getResource("themes/" + SettingsManager.getInstance().getTheme() + ".css").toExternalForm());
         layout.getStyleClass().add("settings-window");
 
+        stage.setTitle(SettingsManager.getInstance().getBundle().getString("settingsWindowTitle"));
         stage.setScene(scene);
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.showAndWait();
+        stage.show();
+    }
+
+    private void updateUI() {
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
+
+        layout.getChildren().clear(); // Clear existing nodes
+
+        // Language Section
+        languageLabel = new Label(bundle.getString("selectLanguage"));
+        layout.getChildren().add(languageLabel);
+
+        languageGroup = new ToggleGroup();
+        String currentLanguage = SettingsManager.getInstance().getLanguage();
+
+        for (String lang : AVAILABLE_LANGUAGES) {
+            String localizedLang = switch (lang) {
+                case "en" -> bundle.getString("languageEnglish");
+                case "de" -> bundle.getString("languageGerman");
+                case "fr" -> bundle.getString("languageFrench");
+                default -> lang;
+            };
+            RadioButton langBtn = new RadioButton(localizedLang);
+            langBtn.setUserData(lang);
+            langBtn.setToggleGroup(languageGroup);
+            if (lang.equals(currentLanguage)) langBtn.setSelected(true);
+            langBtn.setOnAction(e -> {
+                SettingsManager.getInstance().setLanguage((String) langBtn.getUserData());
+                EventBus.getInstance().publish("languageChanged");
+            });
+            layout.getChildren().add(langBtn);
+        }
+
+        // Theme Section
+        themeLabel = new Label(bundle.getString("selectTheme"));
+        layout.getChildren().add(themeLabel);
+
+        themeGroup = new ToggleGroup();
+        String currentTheme = SettingsManager.getInstance().getTheme();
+
+        for (String theme : AVAILABLE_THEMES) {
+            String localized = bundle.getString(switch (theme) {
+                case "dark-mode" -> "themeDark";
+                case "light-mode" -> "themeLight";
+                case "protanopia" -> "themeProtanopia";
+                case "deuteranopia" -> "themeDeuteranopia";
+                case "tritanopia" -> "themeTritanopia";
+                case "achromatopsia" -> "themeAchromatopsia";
+                default -> theme;
+            });
+            RadioButton themeBtn = new RadioButton(localized);
+            themeBtn.setUserData(theme);
+            themeBtn.setToggleGroup(themeGroup);
+            if (theme.equals(currentTheme)) themeBtn.setSelected(true);
+
+            themeBtn.setOnAction(e -> {
+                SettingsManager.getInstance().setTheme(theme);
+                EventBus.getInstance().publish("themeChanged");
+            });
+
+            layout.getChildren().add(themeBtn);
+        }
+    }
+
+    @Override
+    public void onEvent(String eventType) {
+        if (eventType.equals("languageChanged") || eventType.equals("themeChanged")) {
+            ResourceBundle bundle = SettingsManager.getInstance().getBundle();
+            String theme = SettingsManager.getInstance().getTheme();
+
+            // Dynamically update labels and buttons text
+            updateUI();
+
+            // Dynamically update CSS
+            scene.getStylesheets().clear();
+            scene.getStylesheets().add(getClass().getResource("themes/" + theme + ".css").toExternalForm());
+
+            stage.setTitle(bundle.getString("settingsWindowTitle"));
+        }
     }
 }

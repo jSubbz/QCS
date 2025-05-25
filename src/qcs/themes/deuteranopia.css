@@ -38,3 +38,21 @@
     -fx-background-color: #FFFFFF;
     -fx-text-fill: #000000;
 }
+.settings-window {
+    -fx-background-color: #F0F0F0;
+    -fx-text-fill: #000000;
+}
+
+.settings-window .label, .settings-window .radio-button {
+    -fx-text-fill: #000000;
+}
+
+.settings-window .radio-button:selected {
+    -fx-mark-color: #FF8C00;
+}
+
+.settings-window .combo-box, .settings-window .combo-box .list-cell {
+    -fx-background-color: #FFDAB9;
+    -fx-text-fill: #000000;
+    -fx-border-color: #FF8C00;
+}

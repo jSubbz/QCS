@@ -1,20 +1,27 @@
 package qcs;
-import qcs.EventBus;
-import javafx.scene.control.TextField;
+import javafx.geometry.Insets;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 
 public class BottomPanel {
-    private TextField statusField;
-
+    private TextArea statusField;
+    private ScrollPane messageBoxPane;
     public BottomPanel() {
-        statusField = new TextField();
+         messageBoxPane = new ScrollPane();
+        messageBoxPane.setPadding(new Insets(5.0));
+        statusField = new TextArea();
         statusField.setEditable(false);
+        statusField.setWrapText(true);
+        messageBoxPane.setContent(statusField);
+        messageBoxPane.setFitToWidth(true);
+        messageBoxPane.setFitToHeight(true);
     }
 
-    public TextField getPanel() {
-        return statusField;
+    public ScrollPane getPanel() {
+        return messageBoxPane;
     }
 
     public void updateStatus(String message) {
-        statusField.setText(message);
+        statusField.setText(message + "\n");
     }
 }

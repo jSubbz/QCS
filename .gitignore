@@ -29,3 +29,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+/qcs.jar
+/settings.properties
+/qcs_doc/
+/qcs-bat.bat

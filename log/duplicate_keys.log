@@ -1,0 +1,14 @@
+DUPLICATE KEY: 'readMeContent' first defined at line 20 and redefined at line 35 in src\qcs\messages_de.properties
+DUPLICATE KEY: 'aboutContent' first defined at line 22 and redefined at line 37 in src\qcs\messages_de.properties
+DUPLICATE KEY: 'quantumGates' first defined at line 7 and redefined at line 39 in src\qcs\messages_de.properties
+DUPLICATE KEY: 'currentMode' first defined at line 9 and redefined at line 40 in src\qcs\messages_de.properties
+DUPLICATE KEY: 'gate.CCX' first defined at line 53 and redefined at line 55 in src\qcs\messages_de.properties
+DUPLICATE KEY: 'readMeContent' first defined at line 20 and redefined at line 35 in src\qcs\messages_en.properties
+DUPLICATE KEY: 'aboutContent' first defined at line 22 and redefined at line 37 in src\qcs\messages_en.properties
+DUPLICATE KEY: 'quantumGates' first defined at line 7 and redefined at line 40 in src\qcs\messages_en.properties
+DUPLICATE KEY: 'currentMode' first defined at line 9 and redefined at line 41 in src\qcs\messages_en.properties
+DUPLICATE KEY: 'quantumGates' first defined at line 7 and redefined at line 58 in src\qcs\messages_en.properties
+DUPLICATE KEY: 'readMeContent' first defined at line 20 and redefined at line 35 in src\qcs\messages_fr.properties
+DUPLICATE KEY: 'aboutContent' first defined at line 22 and redefined at line 37 in src\qcs\messages_fr.properties
+DUPLICATE KEY: 'quantumGates' first defined at line 7 and redefined at line 39 in src\qcs\messages_fr.properties
+DUPLICATE KEY: 'currentMode' first defined at line 9 and redefined at line 40 in src\qcs\messages_fr.properties

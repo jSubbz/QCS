@@ -3,8 +3,21 @@ package qcs;
 import java.io.*;
 import java.util.*;
 
+/**
+ * PropertiesValidator is a utility class designed to check for duplicate keys
+ * in property files. It helps ensure that localization files or configuration
+ * files are free of conflicting definitions. This validator writes warnings to a log
+ * file and outputs a summary to the console.
+ */
 public class PropertiesValidator {
 
+    /**
+     * Checks the given property file for duplicate keys.
+     * If any duplicates are found, logs them to a file in the "log" directory.
+     *
+     * @param path the path to the property file to validate.
+     * @throws IOException if an error occurs while reading the file.
+     */
     public static void checkForDuplicateKeys(String path) throws IOException {
         if (!isDebugMode()) return;
 
@@ -52,6 +65,12 @@ public class PropertiesValidator {
         }
     }
 
+    /**
+     * Determines whether the application is running in debug mode.
+     * This is checked by examining the JVM input arguments for "jdwp".
+     *
+     * @return true if debug mode is active, false otherwise.
+     */
     private static boolean isDebugMode() {
         return java.lang.management.ManagementFactory.getRuntimeMXBean().
                 getInputArguments().toString().contains("jdwp");

@@ -12,6 +12,11 @@ import javafx.geometry.Pos;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * LeftPanel constructs the left panel of the UI which includes quantum gate buttons,
+ * operation buttons, and parameter fields. It supports localization and updates its
+ * UI when the language or mode is changed.
+ */
 public class LeftPanel implements EventBus.EventListener {
     private VBox panel;
     private Label gateLabel, modeLabel;
@@ -19,6 +24,10 @@ public class LeftPanel implements EventBus.EventListener {
     private Button barrierBtn;
     private List<Button> gateButtons = new ArrayList<>();  // 🔥 Store all gate buttons
 
+    /**
+     * Constructs the LeftPanel and initializes the UI components.
+     * Subscribes to EventBus to listen for language and mode change events.
+     */
     public LeftPanel() {
         gateLabel = new Label();
         modeLabel = new Label();
@@ -106,6 +115,10 @@ public class LeftPanel implements EventBus.EventListener {
         updateUI();
     }
 
+    /**
+     * Updates the UI labels and button texts based on the current ResourceBundle.
+     * Called when the language or mode changes.
+     */
     public void updateUI() {
         var bundle = SettingsManager.getInstance().getBundle();
         gateLabel.setText(bundle.getString("quantumGates"));
@@ -126,10 +139,21 @@ public class LeftPanel implements EventBus.EventListener {
         phaseCLabel.setText(bundle.getString("phaseC"));
     }
 
+    /**
+     * Returns the VBox container holding the left panel UI components.
+     *
+     * @return VBox containing the left panel UI.
+     */
     public VBox getPanel() {
         return panel;
     }
 
+    /**
+     * Handles events published to the EventBus.
+     * Updates the UI when "languageChanged" or "modeToggled" events occur.
+     *
+     * @param eventType The type of event that occurred.
+     */
     @Override
     public void onEvent(String eventType) {
         if ("languageChanged".equals(eventType) || "modeToggled".equals(eventType)) {

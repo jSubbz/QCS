@@ -24,7 +24,8 @@ public class BottomPanel implements EventBus.EventListener {
     private VBox mainBottomContainer;
 
     /**
-     * Constructor to initialize and build the BottomPanel UI components.
+     * Constructs a BottomPanel object.
+     * Initializes and builds the UI components, and subscribes to the EventBus for relevant events.
      */
     public BottomPanel() {
         EventBus.getInstance().subscribe(this);  // 🔥 Subscribe to listen for events like language change
@@ -32,7 +33,9 @@ public class BottomPanel implements EventBus.EventListener {
     }
 
     /**
-     * Builds or rebuilds the bottom panel UI using the latest ResourceBundle.
+     * Builds or rebuilds the bottom panel UI components using the latest ResourceBundle.
+     * This method constructs the tensor product section and message box area.
+     * It is called initially in the constructor and when a language change event occurs.
      */
     private void rebuildPanel() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
@@ -75,8 +78,9 @@ public class BottomPanel implements EventBus.EventListener {
     }
 
     /**
-     * Returns the VBox containing the bottom panel.
-     * @return VBox with the UI components.
+     * Returns the VBox container holding the bottom panel UI components.
+     *
+     * @return VBox containing the bottom panel UI.
      */
     public VBox getPanel() {
         return mainBottomContainer;
@@ -84,7 +88,9 @@ public class BottomPanel implements EventBus.EventListener {
 
     /**
      * Updates the message box with a new message.
-     * @param message The message to display.
+     * Appends the message to the TextArea and scrolls to the bottom.
+     *
+     * @param message The message to display in the message box.
      */
     public void updateStatus(String message) {
         messageField.appendText(message + "\n");
@@ -92,8 +98,10 @@ public class BottomPanel implements EventBus.EventListener {
     }
 
     /**
-     * Event listener to handle relevant events (like language change).
-     * @param eventType The type of event.
+     * Handles events published to the EventBus.
+     * Rebuilds the UI when a "languageChanged" event is detected.
+     *
+     * @param eventType The type of event that occurred.
      */
     @Override
     public void onEvent(String eventType) {

@@ -11,6 +11,10 @@ import javafx.stage.Stage;
 import java.util.List;
 import java.util.ResourceBundle;
 
+/**
+ * SettingsWindow provides a UI window for selecting the language and theme settings of the application.
+ * It dynamically updates in response to changes and supports multiple predefined languages and themes.
+ */
 public class SettingsWindow implements EventBus.EventListener {
     private static final List<String> AVAILABLE_LANGUAGES = List.of("en", "de", "fr");
     private static final List<String> AVAILABLE_THEMES = List.of(
@@ -25,10 +29,16 @@ public class SettingsWindow implements EventBus.EventListener {
     private Label languageLabel;
     private Label themeLabel;
 
+    /**
+     * Constructs the SettingsWindow and subscribes to EventBus for updates.
+     */
     public SettingsWindow() {
         EventBus.getInstance().subscribe(this); // Subscribe to events
     }
 
+    /**
+     * Shows the settings window, initializing the UI components for language and theme selection.
+     */
     public void show() {
         stage = new Stage();
         layout = new VBox(10);
@@ -46,6 +56,10 @@ public class SettingsWindow implements EventBus.EventListener {
         stage.show();
     }
 
+    /**
+     * Updates the UI components to reflect the current language and theme.
+     * Called initially and when a language or theme change event occurs.
+     */
     private void updateUI() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
 
@@ -107,6 +121,12 @@ public class SettingsWindow implements EventBus.EventListener {
         }
     }
 
+    /**
+     * Handles events published to the EventBus.
+     * Updates the UI and stylesheet if the language or theme changes.
+     *
+     * @param eventType the type of event that occurred.
+     */
     @Override
     public void onEvent(String eventType) {
         if (eventType.equals("languageChanged") || eventType.equals("themeChanged")) {

@@ -7,6 +7,11 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import java.io.*;
 
+/**
+ * QuantumCircuitPanel represents the main grid area where the quantum circuit is displayed and managed.
+ * It supports resizing, drawing gates, and performing actions like stepping through circuits, resetting, saving, and loading.
+ * The panel dynamically updates based on user input and events.
+ */
 public class QuantumCircuitPanel implements EventBus.EventListener {
     private BorderPane panel;
     private GridPane gridPane;
@@ -17,6 +22,9 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     private String selectedGate = null;
     private Button[][] cellButtons;  // Track buttons in grid
 
+    /**
+     * Constructs the QuantumCircuitPanel and initializes the grid, controls, and event subscriptions.
+     */
     public QuantumCircuitPanel() {
         var bundle = SettingsManager.getInstance().getBundle();
 
@@ -75,6 +83,10 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         drawGrid();
     }
 
+    /**
+     * Draws the grid based on the current number of qubits and steps.
+     * Initializes the cell buttons and sets up their event handlers for gate selection.
+     */
     public void drawGrid() {
         gridPane.getChildren().clear();
         gridPane.getColumnConstraints().clear();
@@ -119,6 +131,10 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
+    /**
+     * Updates the text of the resize and action buttons based on the current ResourceBundle.
+     * This supports localization.
+     */
     public void updateUI() {
         var bundle = SettingsManager.getInstance().getBundle();
         resizeButton.setText(bundle.getString("resize"));
@@ -127,14 +143,30 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         resetButton.setText(bundle.getString("reset"));
     }
 
+    /**
+     * Returns the main panel container of the quantum circuit UI.
+     *
+     * @return BorderPane containing the circuit grid and controls.
+     */
     public BorderPane getPanel() {
         return panel;
     }
 
+    /**
+     * Sets the bottom panel reference for status updates.
+     *
+     * @param bp the BottomPanel instance.
+     */
     public void setBottomPanel(BottomPanel bp) {
         this.bottomPanel = bp;
     }
 
+    /**
+     * Handles events published to the EventBus.
+     * Updates gate selection and UI labels based on event types.
+     *
+     * @param eventType the type of event that occurred.
+     */
     @Override
     public void onEvent(String eventType) {
         if (eventType.startsWith("gateSelected:")) {
@@ -144,7 +176,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
-    /** Checks if any cell is active (non-empty text). */
+    /**
+     * Checks if any cell in the grid contains a non-empty text, indicating an active cell.
+     *
+     * @return true if there is at least one active cell, false otherwise.
+     */
     public boolean hasActiveCells() {
         if (cellButtons == null) return false;
         for (int r = 0; r < qubits; r++) {
@@ -155,7 +191,9 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         return false;
     }
 
-    /** Clears all cells in the grid. */
+    /**
+     * Clears all cells in the grid, resetting text and styles.
+     */
     public void clearGrid() {
         if (cellButtons == null) return;
         for (int r = 0; r < qubits; r++) {
@@ -168,7 +206,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
-    /** Saves the pattern to a file. */
+    /**
+     * Saves the current grid pattern to a specified file.
+     *
+     * @param file the File object where the pattern will be saved.
+     */
     public void savePatternToFile(File file) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(qubits + "," + steps + "\n");  // Save dimensions
@@ -186,7 +228,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
-    /** Loads a pattern from a file and updates the grid. */
+    /**
+     * Loads a grid pattern from a specified file and updates the grid accordingly.
+     *
+     * @param file the File object from which to load the pattern.
+     */
     public void loadPatternFromFile(File file) {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line = reader.readLine();

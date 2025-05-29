@@ -3,12 +3,16 @@ package qcs;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
 /**
  * MenuBarPanel handles the menu bar UI and its actions.
- * It supports New Project, Open, Save, Exit, Settings, and Help menus.
+ * It supports New Project, Open, Save, Exit, Settings, and Help menus,
+ * and updates dynamically with language and mode changes.
  */
 public class MenuBarPanel implements EventBus.EventListener {
     private MenuBar menuBar;
@@ -16,8 +20,9 @@ public class MenuBarPanel implements EventBus.EventListener {
     private QuantumCircuitPanel gridPanel;
 
     /**
-     * Constructor that accepts a reference to the QuantumCircuitPanel for grid actions.
-     * @param gridPanel the main panel to manage patterns
+     * Constructs the MenuBarPanel, initializing its menus and subscribing to EventBus events.
+     *
+     * @param gridPanel the QuantumCircuitPanel associated with this menu, used for grid actions.
      */
     public MenuBarPanel(QuantumCircuitPanel gridPanel) {
         this.gridPanel = gridPanel;
@@ -25,8 +30,11 @@ public class MenuBarPanel implements EventBus.EventListener {
         EventBus.getInstance().subscribe(this);  // Subscribe to events
     }
 
+    /**
+     * Rebuilds the menu bar using the latest ResourceBundle for localization.
+     * Called initially and when language or mode changes.
+     */
     public void rebuildMenuBar() {
-        // 🔥 FIX: Load fresh ResourceBundle each time rebuildMenuBar is called
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
 
         menuBar = new MenuBar();
@@ -65,12 +73,36 @@ public class MenuBarPanel implements EventBus.EventListener {
 
         // Help Menu
         Menu helpMenu = new Menu(bundle.getString("menuHelp"));
-        helpMenu.getItems().addAll(
-                new MenuItem(bundle.getString("about")),
-                new MenuItem(bundle.getString("readMe"))
-        );
+        MenuItem aboutItem = new MenuItem(bundle.getString("about"));
+        aboutItem.setOnAction(e -> handleAbout());  // 🔥 Hook up the "About" action
+        MenuItem readMeItem = new MenuItem(bundle.getString("readMe"));  // Placeholder
+        helpMenu.getItems().addAll(aboutItem, readMeItem);
 
         menuBar.getMenus().addAll(fileMenu, settingsMenu, helpMenu);
+    }
+
+    /**
+     * Displays the contents of the README.md file in a dialog.
+     */
+    private void handleAbout() {
+        try {
+            // Assuming README.md is in the main project directory (QCS/README.md)
+            String readmeContent = Files.readString(Paths.get("README.md"));
+            TextArea textArea = new TextArea(readmeContent);
+            textArea.setEditable(false);
+            textArea.setWrapText(true);
+            textArea.setPrefWidth(600);
+            textArea.setPrefHeight(400);
+
+            Alert aboutDialog = new Alert(Alert.AlertType.INFORMATION);
+            aboutDialog.setTitle("About Quantum Circuit Simulator - Perry & Strange");
+            aboutDialog.setHeaderText("About QCS");
+            aboutDialog.getDialogPane().setContent(textArea);
+            aboutDialog.showAndWait();
+        } catch (IOException e) {
+            Alert errorDialog = new Alert(Alert.AlertType.ERROR, "Could not load README.md: " + e.getMessage());
+            errorDialog.showAndWait();
+        }
     }
 
     public MenuBar getMenuBar() {
@@ -80,13 +112,12 @@ public class MenuBarPanel implements EventBus.EventListener {
     @Override
     public void onEvent(String eventType) {
         if ("languageChanged".equals(eventType) || "modeToggled".equals(eventType)) {
-            rebuildMenuBar();  // 🔥 Rebuild with updated language
+            rebuildMenuBar();
         }
     }
 
-    /** Handles New Project: clears the grid with confirmation. */
     private void handleNewProject() {
-        ResourceBundle bundle = SettingsManager.getInstance().getBundle();  // 🔥 Use fresh bundle
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
         if (gridPanel.hasActiveCells()) {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                     bundle.getString("confirmNewProject"),
@@ -94,15 +125,14 @@ public class MenuBarPanel implements EventBus.EventListener {
             confirm.setTitle(bundle.getString("menuNew"));
             var result = confirm.showAndWait();
             if (result.isEmpty() || result.get() != ButtonType.YES) {
-                return; // User canceled
+                return;
             }
         }
         gridPanel.clearGrid();
     }
 
-    /** Handles Save: prompts for a file and saves the grid. */
     private void handleSave() {
-        ResourceBundle bundle = SettingsManager.getInstance().getBundle();  // 🔥 Use fresh bundle
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
         FileChooser chooser = new FileChooser();
         chooser.setTitle(bundle.getString("savePattern"));
         File file = chooser.showSaveDialog(null);
@@ -111,9 +141,8 @@ public class MenuBarPanel implements EventBus.EventListener {
         }
     }
 
-    /** Handles Open: prompts for a file and loads the grid. */
     private void handleOpen() {
-        ResourceBundle bundle = SettingsManager.getInstance().getBundle();  // 🔥 Use fresh bundle
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
         FileChooser chooser = new FileChooser();
         chooser.setTitle(bundle.getString("loadPattern"));
         File file = chooser.showOpenDialog(null);

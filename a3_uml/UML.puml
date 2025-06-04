@@ -3,8 +3,8 @@ skinparam dpi 150
 skinparam ArrowLinetype ortho
 left to right direction
 
-' ==== Layer: View ====
-together {
+' ==== VIEW Layer ====
+rectangle "View" #ADD8E6 {
   class QuantumCircuitPanel
   class LeftPanel
   class SettingsWindow
@@ -13,16 +13,16 @@ together {
   class TopBarPanel
 }
 
-' ==== Layer: Model ====
-together {
+' ==== MODEL Layer ====
+rectangle "Model" #98FB98 {
   class CircuitModel
   class Gate
   class SettingsManager
   class File <<utility>>
 }
 
-' ==== Layer: Controller ====
-together {
+' ==== CONTROLLER Layer ====
+rectangle "Controller" #FFB6C1 {
   class CircuitController
   class EventBus
   interface EventListener

@@ -1,0 +1,18 @@
+@startuml
+skinparam dpi 150
+
+[*] --> DesignMode : Initial State
+
+state DesignMode {
+    [*] --> Active
+    Active --> PlayMode : toggleMode()
+    note right of Active : Actions:\n- Enable grid/buttons\n- Allow gate placement\n- Allow resize
+}
+
+state PlayMode {
+    [*] --> Active
+    Active --> DesignMode : toggleMode()
+    note right of Active : Actions:\n- Disable grid/buttons\n- Enable stepping/reset
+}
+
+@enduml

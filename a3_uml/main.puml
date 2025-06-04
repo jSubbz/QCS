@@ -1,0 +1,89 @@
+@startuml
+skinparam dpi 150
+skinparam packageStyle rectangle
+skinparam ArrowLinetype ortho
+left to right direction
+
+actor User
+
+package "SettingsWindow" {
+    usecase "Change Language" as UC6
+    usecase "Change Theme" as UC7
+    usecase "Change Gate Colors" as UC11
+    usecase "Toggle Design / Play Mode" as UC21
+}
+
+package "Design Mode" {
+    usecase "Select Quantum Gate" as UC1
+    usecase "Place Quantum Gate" as UC2
+    usecase "Clear Quantum Gate" as UC3
+    usecase "Resize Grid" as UC4
+    usecase "Create New Circuit" as UC5
+    usecase "Adjust Phase Parameters" as UC8
+}
+
+package "Play Mode" {
+    usecase "Step Simulation" as UC12
+    usecase "Reset Simulation" as UC13
+    usecase "Run Full Simulation" as UC14
+}
+
+package "MenuBarPanel" {
+    usecase "Save Circuit to File" as UC9
+    usecase "Load Circuit from File" as UC10
+    usecase "View About Information" as UC15
+    usecase "View Readme/Tutorial" as UC16
+    usecase "Exit Application" as UC20
+}
+
+package "Bonus Features" {
+    usecase "Export Circuit as Image/PDF" as UC17
+    usecase "Undo/Redo Actions" as UC18
+    usecase "Share Circuit Configuration" as UC19
+}
+
+' User interactions
+User --> UC6
+User --> UC7
+User --> UC11
+User --> UC21
+
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC8
+
+User --> UC12
+User --> UC13
+User --> UC14
+
+User --> UC9
+User --> UC10
+User --> UC15
+User --> UC16
+User --> UC20
+User --> UC17
+User --> UC18
+User --> UC19
+
+' Relationships
+UC2 .> UC1 : <<includes>>
+UC3 .> UC1 : <<includes>>
+UC5 .> UC4 : <<includes>>
+UC12 .> UC2 : <<extends>>
+
+' Mode toggle enables actions
+UC21 .> UC1 : <<enables>>  ' Enables Design Mode actions
+UC21 .> UC2 : <<enables>>
+UC21 .> UC3 : <<enables>>
+UC21 .> UC4 : <<enables>>
+UC21 .> UC5 : <<enables>>
+UC21 .> UC8 : <<enables>>
+
+UC21 .> UC12 : <<enables>>  ' Enables Play Mode actions
+UC21 .> UC13 : <<enables>>
+UC21 .> UC14 : <<enables>>
+
+@enduml

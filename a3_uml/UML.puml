@@ -1,0 +1,44 @@
+@startuml
+skinparam dpi 150
+skinparam ArrowLinetype ortho
+left to right direction
+
+' ==== Layer: View ====
+together {
+  class QuantumCircuitPanel
+  class LeftPanel
+  class SettingsWindow
+  class MenuBarPanel
+  class BottomPanel
+  class TopBarPanel
+}
+
+' ==== Layer: Model ====
+together {
+  class CircuitModel
+  class Gate
+  class SettingsManager
+  class File <<utility>>
+}
+
+' ==== Layer: Controller ====
+together {
+  class CircuitController
+  class EventBus
+  interface EventListener
+}
+
+' ==== Relationships ====
+QuantumCircuitPanel --> EventBus : subscribes
+LeftPanel --> EventBus : subscribes
+SettingsWindow --> SettingsManager
+QuantumCircuitPanel --> CircuitModel
+CircuitModel --> Gate
+CircuitModel --> File : uses
+CircuitController --> QuantumCircuitPanel : calls
+CircuitController --> LeftPanel : calls
+MenuBarPanel --> CircuitController
+SettingsWindow --> CircuitController
+EventBus --> EventListener
+
+@enduml

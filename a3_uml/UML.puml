@@ -5,27 +5,83 @@ left to right direction
 
 ' ==== VIEW Layer ====
 rectangle "View" #ADD8E6 {
-  class QuantumCircuitPanel
-  class LeftPanel
-  class SettingsWindow
-  class MenuBarPanel
-  class BottomPanel
-  class TopBarPanel
+  class QuantumCircuitPanel {
+    + drawGrid()
+    + clearGrid()
+    + updateUI()
+    + getPanel()
+    + setBottomPanel()
+    + hasActiveCells()
+    + savePatternToFile(File)
+    + loadPatternFromFile(File)
+  }
+
+  class LeftPanel {
+    + updateUI()
+    + getPanel()
+  }
+
+  class SettingsWindow {
+    + show()
+  }
+
+  class MenuBarPanel {
+    + getMenuBar()
+    + rebuildMenuBar()
+  }
+
+  class BottomPanel {
+    + getPanel()
+    + updateStatus(String)
+  }
+
+  class TopBarPanel {
+    + getPanel()
+  }
 }
 
 ' ==== MODEL Layer ====
 rectangle "Model" #98FB98 {
-  class CircuitModel
+  class CircuitModel {
+    + addGate(Gate)
+    + removeGate(int, int)
+    + saveToFile(File)
+    + loadFromFile(File)
+  }
+
   class Gate
-  class SettingsManager
+
+  class SettingsManager {
+    + getBundle()
+    + getTheme()
+    + isDesignMode()
+    + setLanguage(String)
+    + getLanguage()
+    + setTheme(String)
+    + toggleMode()
+  }
+
   class File <<utility>>
 }
 
 ' ==== CONTROLLER Layer ====
 rectangle "Controller" #FFB6C1 {
-  class CircuitController
-  class EventBus
-  interface EventListener
+  class CircuitController {
+    + toggleMode()
+    + stepForward()
+    + stepBackward()
+    + reset()
+  }
+
+  class EventBus {
+    + getInstance()
+    + subscribe(EventListener)
+    + publish(String)
+  }
+
+  interface EventListener {
+    + onEvent(String)
+  }
 }
 
 ' ==== Relationships ====

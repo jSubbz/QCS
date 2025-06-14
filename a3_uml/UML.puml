@@ -72,7 +72,10 @@ rectangle "Controller" #FFB6C1 {
     + stepBackward()
     + reset()
   }
+}
 
+' ==== INFRASTRUCTURE / UTILITY ====
+rectangle "Infrastructure" #D3D3D3 {
   class EventBus {
     + getInstance()
     + subscribe(EventListener)
@@ -93,8 +96,8 @@ CircuitModel --> Gate
 CircuitModel --> File : uses
 CircuitController --> QuantumCircuitPanel : calls
 CircuitController --> LeftPanel : calls
-MenuBarPanel --> CircuitController
-SettingsWindow --> CircuitController
+MenuBarPanel --> CircuitController : triggers actions
+SettingsWindow --> CircuitController : triggers actions
 EventBus --> EventListener
 
 @enduml

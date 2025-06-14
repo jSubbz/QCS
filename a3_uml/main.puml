@@ -1,89 +1,75 @@
 @startuml
 skinparam dpi 150
-skinparam packageStyle rectangle
-skinparam ArrowLinetype ortho
 left to right direction
 
 actor User
 
-package "SettingsWindow" {
-    usecase "Change Language" as UC6
-    usecase "Change Theme" as UC7
-    usecase "Change Gate Colors" as UC11
-    usecase "Toggle Design / Play Mode" as UC21
+rectangle "Design Mode" {
+  usecase "Place Quantum Gate"
+  usecase "Select Quantum Gate"
+  usecase "Clear Quantum Gate"
+  usecase "Create New Circuit"
+  usecase "Resize Grid"
+  usecase "Adjust Phase Parameters"
 }
 
-package "Design Mode" {
-    usecase "Select Quantum Gate" as UC1
-    usecase "Place Quantum Gate" as UC2
-    usecase "Clear Quantum Gate" as UC3
-    usecase "Resize Grid" as UC4
-    usecase "Create New Circuit" as UC5
-    usecase "Adjust Phase Parameters" as UC8
+rectangle "Play Mode" {
+  usecase "Step Simulation"
+  usecase "Reset Simulation"
+  usecase "Run Full Simulation"
 }
 
-package "Play Mode" {
-    usecase "Step Simulation" as UC12
-    usecase "Reset Simulation" as UC13
-    usecase "Run Full Simulation" as UC14
+rectangle "SettingsWindow" {
+  usecase "Toggle Design / Play Mode"
+  usecase "Change Language"
+  usecase "Change Theme"
+  usecase "Change Gate Colors"
 }
 
-package "MenuBarPanel" {
-    usecase "Save Circuit to File" as UC9
-    usecase "Load Circuit from File" as UC10
-    usecase "View About Information" as UC15
-    usecase "View Readme/Tutorial" as UC16
-    usecase "Exit Application" as UC20
-}
-
-package "Bonus Features" {
-    usecase "Export Circuit as Image/PDF" as UC17
-    usecase "Undo/Redo Actions" as UC18
-    usecase "Share Circuit Configuration" as UC19
+rectangle "MenuBarPanel" {
+  usecase "Save Circuit to File"
+  usecase "Load Circuit from File"
+  usecase "View About Information"
+  usecase "View Readme/Tutorial"
+  usecase "Exit Application"
 }
 
 ' User interactions
-User --> UC6
-User --> UC7
-User --> UC11
-User --> UC21
+User --> "Place Quantum Gate"
+User --> "Select Quantum Gate"
+User --> "Clear Quantum Gate"
+User --> "Create New Circuit"
+User --> "Resize Grid"
+User --> "Adjust Phase Parameters"
 
-User --> UC1
-User --> UC2
-User --> UC3
-User --> UC4
-User --> UC5
-User --> UC8
+User --> "Step Simulation"
+User --> "Reset Simulation"
+User --> "Run Full Simulation"
 
-User --> UC12
-User --> UC13
-User --> UC14
+User --> "Toggle Design / Play Mode"
+User --> "Change Language"
+User --> "Change Theme"
+User --> "Change Gate Colors"
 
-User --> UC9
-User --> UC10
-User --> UC15
-User --> UC16
-User --> UC20
-User --> UC17
-User --> UC18
-User --> UC19
+User --> "Save Circuit to File"
+User --> "Load Circuit from File"
+User --> "View About Information"
+User --> "View Readme/Tutorial"
+User --> "Exit Application"
 
 ' Relationships
-UC2 .> UC1 : <<includes>>
-UC3 .> UC1 : <<includes>>
-UC5 .> UC4 : <<includes>>
-UC12 .> UC2 : <<extends>>
+"Place Quantum Gate" --> "Select Quantum Gate" : <<includes>>
+"Clear Quantum Gate" --> "Select Quantum Gate" : <<includes>>
+"Create New Circuit" --> "Resize Grid" : <<includes>>
+"Step Simulation" --> "Place Quantum Gate" : <<extends>>
 
-' Mode toggle enables actions
-UC21 .> UC1 : <<enables>>  ' Enables Design Mode actions
-UC21 .> UC2 : <<enables>>
-UC21 .> UC3 : <<enables>>
-UC21 .> UC4 : <<enables>>
-UC21 .> UC5 : <<enables>>
-UC21 .> UC8 : <<enables>>
+"Toggle Design / Play Mode" --> "Place Quantum Gate" : <<enables>>
+"Toggle Design / Play Mode" --> "Resize Grid" : <<enables>>
+"Toggle Design / Play Mode" --> "Create New Circuit" : <<enables>>
+"Toggle Design / Play Mode" --> "Adjust Phase Parameters" : <<enables>>
 
-UC21 .> UC12 : <<enables>>  ' Enables Play Mode actions
-UC21 .> UC13 : <<enables>>
-UC21 .> UC14 : <<enables>>
+"Toggle Design / Play Mode" --> "Step Simulation" : <<enables>>
+"Toggle Design / Play Mode" --> "Reset Simulation" : <<enables>>
+"Toggle Design / Play Mode" --> "Run Full Simulation" : <<enables>>
 
 @enduml

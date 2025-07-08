@@ -1,9 +1,8 @@
-package qcs;
+package qcs.view;
 
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.geometry.Pos;
-import qcs.EventBus;
 
 /**
  * TopBarPanel creates a simple top bar with window control buttons: minimize, maximize, and close.

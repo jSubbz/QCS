@@ -1,13 +1,18 @@
-package qcs;
+package qcs.view;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import qcs.util.EventBus;
+import qcs.util.SettingsManager;
 
 import java.util.ResourceBundle;
 
@@ -40,7 +45,7 @@ public class BottomPanel implements EventBus.EventListener {
     private void rebuildPanel() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
 
-        // Clear existing children instead of replacing the container
+        // Clear existing children
         if (mainBottomContainer == null) {
             mainBottomContainer = new VBox();
             mainBottomContainer.setPadding(new Insets(2.5));
@@ -50,7 +55,7 @@ public class BottomPanel implements EventBus.EventListener {
             mainBottomContainer.getChildren().clear();
         }
 
-        // Update tensor section
+        // Tensor product section
         GridPane tensorProductPane = new GridPane();
         tensorLabel = new Label(bundle.getString("tensorLabel"));
         tensorTextField = new TextField(bundle.getString("defaultTensorText"));
@@ -61,21 +66,44 @@ public class BottomPanel implements EventBus.EventListener {
         // Message box label
         messageBoxLabel = new Label(bundle.getString("messageBoxLabel"));
 
-        // Scroll pane
+        // Message field inside scroll pane
         if (messageField == null) {
             messageField = new TextArea();
             messageField.setEditable(false);
             messageField.setWrapText(true);
         }
+
         ScrollPane messageBoxPane = new ScrollPane(messageField);
         messageBoxPane.setPadding(new Insets(7.5));
         messageBoxPane.setFitToWidth(true);
         messageBoxPane.setFitToHeight(true);
+        messageBoxPane.setPrefWidth(500);
 
-        // Add components
-        mainBottomContainer.getChildren().addAll(tensorProductPane, messageBoxLabel, messageBoxPane);
-        VBox.setVgrow(messageBoxPane, Priority.ALWAYS);
+// Allow scroll pane to stretch
+        HBox.setHgrow(messageBoxPane, Priority.ALWAYS);
+        messageBoxPane.setMaxWidth(Double.MAX_VALUE);
+
+// Quantum simulation image
+        ImageView quantumImage = new ImageView(getClass().getResource("../quantum_states.jpg").toExternalForm());
+        quantumImage.setPreserveRatio(true);
+        quantumImage.setFitWidth(200);
+        quantumImage.setSmooth(true);
+
+// Combined layout
+        HBox messageAndImageRow = new HBox(10, messageBoxPane, quantumImage);
+        messageAndImageRow.setAlignment(Pos.CENTER);
+        messageAndImageRow.setPadding(new Insets(5));
+        messageAndImageRow.setFillHeight(true);
+
+// Add all to bottom container
+        mainBottomContainer.getChildren().addAll(
+                tensorProductPane,
+                messageBoxLabel,
+                messageAndImageRow
+        );
+        VBox.setVgrow(messageAndImageRow, Priority.ALWAYS);
     }
+
 
     /**
      * Returns the VBox container holding the bottom panel UI components.

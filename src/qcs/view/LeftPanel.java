@@ -1,7 +1,7 @@
-package qcs;
+package qcs.view;
 
 import javafx.scene.control.Button;
-import qcs.EventBus;
+import qcs.util.EventBus;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
@@ -9,6 +9,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.control.TextField;
 import javafx.geometry.Pos;
+import qcs.util.SettingsManager;
+
 import java.util.ArrayList;
 import java.util.List;
 

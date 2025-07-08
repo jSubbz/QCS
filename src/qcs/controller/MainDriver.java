@@ -1,12 +1,17 @@
-package qcs;
+package qcs.controller;
 
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
-import qcs.EventBus;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import qcs.util.EventBus;
+import qcs.util.PropertiesValidator;
+import qcs.util.SettingsManager;
+import qcs.view.BottomPanel;
+import qcs.view.LeftPanel;
+import qcs.view.MenuBarPanel;
+import qcs.view.QuantumCircuitPanel;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +67,7 @@ public class MainDriver extends Application implements EventBus.EventListener {
      */
     private void applyTheme() {
         scene.getStylesheets().clear();
-        String themeFile = String.format("themes/%s.css", SettingsManager.getInstance().getTheme());
+        String themeFile = String.format("/qcs/themes/%s.css", SettingsManager.getInstance().getTheme());
         var resource = getClass().getResource(themeFile);
         if (resource != null) {
             scene.getStylesheets().add(resource.toExternalForm());

@@ -1,7 +1,10 @@
-package qcs;
+package qcs.view;
 
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
+import qcs.util.SettingsManager;
+import qcs.util.EventBus;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;

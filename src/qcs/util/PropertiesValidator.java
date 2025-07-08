@@ -1,4 +1,4 @@
-package qcs;
+package qcs.util;
 
 import java.io.*;
 import java.util.*;

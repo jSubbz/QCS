@@ -1,12 +1,13 @@
-package qcs;
+package qcs.view;
 
-import qcs.EventBus;
+import qcs.util.EventBus;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import qcs.util.SettingsManager;
 
 import java.util.List;
 import java.util.ResourceBundle;
@@ -47,7 +48,7 @@ public class SettingsWindow implements EventBus.EventListener {
         updateUI(); // Build UI elements based on the current settings
 
         scene = new Scene(layout, 300, 400);
-        scene.getStylesheets().add(getClass().getResource("themes/" + SettingsManager.getInstance().getTheme() + ".css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("/qcs/themes/" + SettingsManager.getInstance().getTheme() + ".css").toExternalForm());
         layout.getStyleClass().add("settings-window");
 
         stage.setTitle(SettingsManager.getInstance().getBundle().getString("settingsWindowTitle"));
@@ -138,7 +139,7 @@ public class SettingsWindow implements EventBus.EventListener {
 
             // Dynamically update CSS
             scene.getStylesheets().clear();
-            scene.getStylesheets().add(getClass().getResource("themes/" + theme + ".css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/qcs/themes/" + theme + ".css").toExternalForm());
 
             stage.setTitle(bundle.getString("settingsWindowTitle"));
         }

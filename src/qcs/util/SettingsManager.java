@@ -1,6 +1,5 @@
-package qcs;
+package qcs.util;
 
-import qcs.EventBus;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Properties;

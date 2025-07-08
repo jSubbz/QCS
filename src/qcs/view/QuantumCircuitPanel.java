@@ -1,12 +1,16 @@
-package qcs;
+package qcs.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import qcs.EventBus;
+import qcs.model.GateOperation;
+import qcs.util.EventBus;
+import qcs.util.SettingsManager;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 /**
@@ -26,6 +30,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     private String selectedGate = null;
     private Button[][] cellButtons;
     private TextArea patternDisplayArea;
+
+    // Step simulation state
+    private int currentStep = 0;
+    private List<List<GateOperation>> stepOperations = new ArrayList<>();
+    private List<List<Double>> simulatedStates = new ArrayList<>();
+
 
     /**
      * Constructs QuantumCircuitPanel, initializing the grid, controls, and subscribing to events.

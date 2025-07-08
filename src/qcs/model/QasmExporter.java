@@ -7,17 +7,10 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * QasmExporter writes a list of GateOperations to a Qiskit/OpenQASM file with step metadata.
+ * QasmExporter writes a list of gate operations to a Qiskit/OpenQASM file with step metadata.
  */
 public class QasmExporter {
 
-    /**
-     * Writes gate operations to QASM file, grouping by step.
-     *
-     * @param file output .qasm file
-     * @param qubitCount number of qubits
-     * @param steps 2D list of gate operations per step
-     */
     public static void writeQasm(File file, int qubitCount, List<List<GateOperation>> steps) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write("OPENQASM 2.0;\n");

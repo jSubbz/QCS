@@ -129,3 +129,8 @@
     -fx-text-fill: #FFFFFF;
     -fx-border-color: #7289DA;
 }
+.invalid-gate {
+    -fx-background-color: red;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}

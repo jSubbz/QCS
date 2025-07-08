@@ -1,4 +1,6 @@
-.root { -fx-background-color: #F0F0F0; -fx-text-fill: #000000; }
+.root {
+    -fx-background-color: #F0F0F0;
+    -fx-text-fill: #000000; }
 
 .button, .gate-button {
     -fx-background-color: #33CC33; 
@@ -42,4 +44,9 @@
     -fx-background-color: #E1F5FE;
     -fx-text-fill: #000000;
     -fx-border-color: #039BE5;
+}
+.invalid-gate {
+    -fx-background-color: #FFCCCB;  /* Pastel red for contrast with yellow/gold */
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
 }

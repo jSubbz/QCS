@@ -43,3 +43,8 @@
     -fx-text-fill: #000000;
     -fx-border-color: #FF8C00;
 }
+.invalid-gate {
+    -fx-background-color: #FFB3B3;  /* Light red with good contrast */
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+}

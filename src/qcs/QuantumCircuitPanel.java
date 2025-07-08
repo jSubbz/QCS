@@ -1,34 +1,51 @@
 package qcs;
 
-import qcs.EventBus;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import qcs.EventBus;
+
 import java.io.*;
+import java.util.ResourceBundle;
 
 /**
- * QuantumCircuitPanel represents the main grid area where the quantum circuit is displayed and managed.
- * It supports resizing, drawing gates, and performing actions like stepping through circuits, resetting, saving, and loading.
- * The panel dynamically updates based on user input and events.
+ * QuantumCircuitPanel represents the grid area for displaying and managing quantum circuits.
+ * It includes a resizable grid, pattern display, and interactive controls.
  */
 public class QuantumCircuitPanel implements EventBus.EventListener {
+
     private BorderPane panel;
     private GridPane gridPane;
     private Button resizeButton, newCircuitButton, stepButton, resetButton;
     private Spinner<Integer> qubitsSpinner, stepsSpinner;
     private BottomPanel bottomPanel;
-    private int qubits = 3, steps = 5;
+
+    private int qubits = 3;
+    private int steps = 5;
     private String selectedGate = null;
-    private Button[][] cellButtons;  // Track buttons in grid
+    private Button[][] cellButtons;
+    private TextArea patternDisplayArea;
 
     /**
-     * Constructs the QuantumCircuitPanel and initializes the grid, controls, and event subscriptions.
+     * Constructs QuantumCircuitPanel, initializing the grid, controls, and subscribing to events.
      */
     public QuantumCircuitPanel() {
-        var bundle = SettingsManager.getInstance().getBundle();
+        initializePanel();
+        initializeControls();
+        initializePatternDisplayArea();
+        drawGrid();
+        updateUI();
 
-        // Create the label and grid
+        EventBus.getInstance().subscribe(this);
+    }
+
+    /**
+     * Initializes the main UI layout container, including grid setup.
+     */
+    private void initializePanel() {
+        panel = new BorderPane();
+
         Label gridLabel = new Label("Quantum Circuit");
         gridLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
@@ -36,8 +53,6 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         gridPane.setGridLinesVisible(true);
         gridPane.setPadding(new Insets(10));
         gridPane.setStyle("-fx-background-color: #FFFFFF;");
-        GridPane.setHgrow(gridPane, Priority.ALWAYS);
-        GridPane.setVgrow(gridPane, Priority.ALWAYS);
         gridPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         BorderPane gridContainer = new BorderPane();
@@ -45,9 +60,31 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         BorderPane.setAlignment(gridLabel, Pos.CENTER);
         gridContainer.setCenter(gridPane);
 
-        // Resize controls with localization
+        panel.setCenter(gridContainer);
+        panel.setPadding(new Insets(10));
+    }
+
+    /**
+     * Initializes the area for displaying loaded patterns or logging interactions.
+     */
+    private void initializePatternDisplayArea() {
+        patternDisplayArea = new TextArea();
+        patternDisplayArea.setEditable(false);
+        patternDisplayArea.setWrapText(true);
+        patternDisplayArea.setPrefWidth(250);
+
+        panel.setRight(patternDisplayArea);
+    }
+
+    /**
+     * Initializes UI controls like buttons and spinners for interaction and resizing the grid.
+     */
+    private void initializeControls() {
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
+
         qubitsSpinner = new Spinner<>(1, 10, qubits);
         stepsSpinner = new Spinner<>(1, 20, steps);
+
         resizeButton = new Button(bundle.getString("resize"));
         resizeButton.setOnAction(e -> {
             qubits = qubitsSpinner.getValue();
@@ -56,43 +93,32 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             if (bottomPanel != null)
                 bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
         });
-        HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
-        resizeControls.setAlignment(Pos.CENTER);
-        resizeControls.setPadding(new Insets(10));
 
-        // Additional action buttons with localization
         newCircuitButton = new Button(bundle.getString("newCircuit"));
         stepButton = new Button(bundle.getString("step"));
         resetButton = new Button(bundle.getString("reset"));
+
+        HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
+        resizeControls.setAlignment(Pos.CENTER);
+
         HBox actionButtons = new HBox(10, newCircuitButton, stepButton, resetButton);
         actionButtons.setAlignment(Pos.CENTER);
-        actionButtons.setPadding(new Insets(10));
 
         VBox bottomControls = new VBox(10, resizeControls, actionButtons);
         bottomControls.setAlignment(Pos.CENTER);
 
-        panel = new BorderPane();
-        panel.setCenter(gridContainer);
         panel.setBottom(bottomControls);
-        panel.setPadding(new Insets(10));
-        BorderPane.setAlignment(bottomControls, Pos.CENTER);
-
-        updateUI();
-        EventBus.getInstance().subscribe(this);
-
-        drawGrid();
     }
 
     /**
-     * Draws the grid based on the current number of qubits and steps.
-     * Initializes the cell buttons and sets up their event handlers for gate selection.
+     * Draws the interactive quantum circuit grid, with event handlers for cell interaction.
      */
     public void drawGrid() {
         gridPane.getChildren().clear();
         gridPane.getColumnConstraints().clear();
         gridPane.getRowConstraints().clear();
 
-        cellButtons = new Button[qubits][steps];  // Initialize button tracker
+        cellButtons = new Button[qubits][steps];
 
         for (int c = 0; c < steps; c++) {
             ColumnConstraints cc = new ColumnConstraints();
@@ -100,6 +126,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             cc.setHgrow(Priority.ALWAYS);
             gridPane.getColumnConstraints().add(cc);
         }
+
         for (int r = 0; r < qubits; r++) {
             RowConstraints rc = new RowConstraints();
             rc.setPercentHeight(100.0 / qubits);
@@ -113,60 +140,42 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 cell.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
                 cell.getStyleClass().add("grid-cell");
                 int finalR = r, finalC = c;
+
                 cell.setOnAction(e -> {
                     cell.getStyleClass().removeIf(style -> style.startsWith("gate-"));
-                    cell.setStyle("");
                     if (selectedGate != null) {
                         cell.setText(selectedGate);
                         cell.getStyleClass().add("gate-" + selectedGate);
+
+                        if (SettingsManager.getInstance().isDesignMode()) {
+                            patternDisplayArea.appendText(String.format("%d,%d,%s\n", finalR, finalC, selectedGate));
+                        }
                     } else {
                         cell.setText("");
                     }
+
                     if (bottomPanel != null)
                         bottomPanel.updateStatus((selectedGate != null ? selectedGate : "Cleared") + " at " + finalR + "," + finalC);
                 });
+
                 gridPane.add(cell, c, r);
-                cellButtons[r][c] = cell;  // Store cell reference
+                cellButtons[r][c] = cell;
             }
         }
     }
 
     /**
-     * Updates the text of the resize and action buttons based on the current ResourceBundle.
-     * This supports localization.
+     * Updates UI components to reflect current language and theme settings.
      */
     public void updateUI() {
-        var bundle = SettingsManager.getInstance().getBundle();
+        ResourceBundle bundle = SettingsManager.getInstance().getBundle();
+
         resizeButton.setText(bundle.getString("resize"));
         newCircuitButton.setText(bundle.getString("newCircuit"));
         stepButton.setText(bundle.getString("step"));
         resetButton.setText(bundle.getString("reset"));
     }
 
-    /**
-     * Returns the main panel container of the quantum circuit UI.
-     *
-     * @return BorderPane containing the circuit grid and controls.
-     */
-    public BorderPane getPanel() {
-        return panel;
-    }
-
-    /**
-     * Sets the bottom panel reference for status updates.
-     *
-     * @param bp the BottomPanel instance.
-     */
-    public void setBottomPanel(BottomPanel bp) {
-        this.bottomPanel = bp;
-    }
-
-    /**
-     * Handles events published to the EventBus.
-     * Updates gate selection and UI labels based on event types.
-     *
-     * @param eventType the type of event that occurred.
-     */
     @Override
     public void onEvent(String eventType) {
         if (eventType.startsWith("gateSelected:")) {
@@ -176,10 +185,13 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
+    public BorderPane getPanel() {
+        return panel;
+    }
     /**
-     * Checks if any cell in the grid contains a non-empty text, indicating an active cell.
+     * Checks if any cell in the grid contains text, indicating an active cell.
      *
-     * @return true if there is at least one active cell, false otherwise.
+     * @return true if there is an active cell, false otherwise.
      */
     public boolean hasActiveCells() {
         if (cellButtons == null) return false;
@@ -192,7 +204,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
     /**
-     * Clears all cells in the grid, resetting text and styles.
+     * Clears all cells in the grid.
      */
     public void clearGrid() {
         if (cellButtons == null) return;
@@ -201,19 +213,19 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 Button cell = cellButtons[r][c];
                 cell.setText("");
                 cell.getStyleClass().removeIf(style -> style.startsWith("gate-"));
-                cell.setStyle("");
             }
         }
+        patternDisplayArea.clear(); // 🔥 Also clear the pattern log
     }
 
     /**
-     * Saves the current grid pattern to a specified file.
+     * Saves the current grid pattern to a file.
      *
-     * @param file the File object where the pattern will be saved.
+     * @param file File to save the pattern to.
      */
     public void savePatternToFile(File file) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(qubits + "," + steps + "\n");  // Save dimensions
+            writer.write(qubits + "," + steps + "\n");
             for (int r = 0; r < qubits; r++) {
                 for (int c = 0; c < steps; c++) {
                     String text = cellButtons[r][c].getText();
@@ -229,25 +241,30 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
     /**
-     * Loads a grid pattern from a specified file and updates the grid accordingly.
+     * Loads a grid pattern from a file.
      *
-     * @param file the File object from which to load the pattern.
+     * @param file File to load the pattern from.
      */
     public void loadPatternFromFile(File file) {
+        StringBuilder content = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line = reader.readLine();
-            String[] dims = line.split(",");
-            int loadedQubits = Integer.parseInt(dims[0]);
-            int loadedSteps = Integer.parseInt(dims[1]);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            patternDisplayArea.setText(content.toString());
 
-            qubits = loadedQubits;
-            steps = loadedSteps;
+            String[] lines = content.toString().split("\n");
+            String[] dims = lines[0].split(",");
+            qubits = Integer.parseInt(dims[0]);
+            steps = Integer.parseInt(dims[1]);
+
             qubitsSpinner.getValueFactory().setValue(qubits);
             stepsSpinner.getValueFactory().setValue(steps);
-            drawGrid();  // Rebuild grid with new size
+            drawGrid();
 
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
+            for (int i = 1; i < lines.length; i++) {
+                String[] parts = lines[i].split(",");
                 int r = Integer.parseInt(parts[0]);
                 int c = Integer.parseInt(parts[1]);
                 String gate = parts[2];
@@ -255,9 +272,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 cell.setText(gate);
                 cell.getStyleClass().add("gate-" + gate);
             }
+
             System.out.println("Pattern loaded from " + file.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
 }

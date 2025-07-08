@@ -5,6 +5,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import qcs.model.GateOperation;
+import qcs.model.QasmExporter;
 import qcs.util.EventBus;
 import qcs.util.SettingsManager;
 
@@ -123,12 +124,17 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     /**
      * Draws the interactive quantum circuit grid, with event handlers for cell interaction.
      */
+    /**
+     * Draws the interactive quantum circuit grid, with event handlers for cell interaction.
+     * Supports placing gates, validating qubit requirements, and building stepOperations for QASM export.
+     */
     public void drawGrid() {
         gridPane.getChildren().clear();
         gridPane.getColumnConstraints().clear();
         gridPane.getRowConstraints().clear();
 
         cellButtons = new Button[qubits][steps];
+        stepOperations.clear(); // clear logic with new grid
 
         for (int c = 0; c < steps; c++) {
             ColumnConstraints cc = new ColumnConstraints();
@@ -152,20 +158,67 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 int finalR = r, finalC = c;
 
                 cell.setOnAction(e -> {
-                    cell.getStyleClass().removeIf(style -> style.startsWith("gate-"));
-                    if (selectedGate != null) {
-                        cell.setText(selectedGate);
-                        cell.getStyleClass().add("gate-" + selectedGate);
+                    // Clear old styles
+                    cell.getStyleClass().removeIf(style -> style.startsWith("gate-") || style.equals("invalid-gate"));
 
-                        if (SettingsManager.getInstance().isDesignMode()) {
-                            patternDisplayArea.appendText(String.format("%d,%d,%s\n", finalR, finalC, selectedGate));
-                        }
-                    } else {
+                    // Do nothing if no gate selected or not in design mode
+                    if (!SettingsManager.getInstance().isDesignMode() || selectedGate == null || selectedGate.isEmpty()) {
                         cell.setText("");
+                        if (bottomPanel != null)
+                            bottomPanel.updateStatus("Cleared at " + finalR + "," + finalC);
+                        return;
                     }
 
-                    if (bottomPanel != null)
-                        bottomPanel.updateStatus((selectedGate != null ? selectedGate : "Cleared") + " at " + finalR + "," + finalC);
+                    int stepIndex = finalC;
+                    int qubit = finalR;
+
+                    // Ensure we have a list for this step
+                    while (stepOperations.size() <= stepIndex) {
+                        stepOperations.add(new ArrayList<>());
+                    }
+
+                    // Logic for gate validity
+                    boolean valid = true;
+                    int[] targets;
+
+                    switch (selectedGate.toUpperCase()) {
+                        case "CX":
+                        case "CU":
+                            if (qubit + 1 >= qubits) {
+                                valid = false;
+                            } else {
+                                targets = new int[]{qubit, qubit + 1};
+                                stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
+                            }
+                            break;
+
+                        case "CCX":
+                            if (qubit + 2 >= qubits) {
+                                valid = false;
+                            } else {
+                                targets = new int[]{qubit, qubit + 1, qubit + 2};
+                                stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
+                            }
+                            break;
+
+                        default:
+                            // Single qubit gate
+                            targets = new int[]{qubit};
+                            stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
+                            break;
+                    }
+
+                    if (valid) {
+                        cell.setText(selectedGate);
+                        cell.getStyleClass().add("gate-" + selectedGate);
+                        if (bottomPanel != null)
+                            bottomPanel.updateStatus("Placed " + selectedGate + " at " + qubit + "," + stepIndex);
+                    } else {
+                        cell.setText("❌");
+                        cell.getStyleClass().add("invalid-gate");
+                        if (bottomPanel != null)
+                            bottomPanel.updateStatus("Invalid placement of " + selectedGate + " at row " + qubit);
+                    }
                 });
 
                 gridPane.add(cell, c, r);
@@ -173,6 +226,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             }
         }
     }
+
 
     /**
      * Updates UI components to reflect current language and theme settings.
@@ -234,21 +288,14 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
      * @param file File to save the pattern to.
      */
     public void savePatternToFile(File file) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(qubits + "," + steps + "\n");
-            for (int r = 0; r < qubits; r++) {
-                for (int c = 0; c < steps; c++) {
-                    String text = cellButtons[r][c].getText();
-                    if (!text.isEmpty()) {
-                        writer.write(r + "," + c + "," + text + "\n");
-                    }
-                }
-            }
-            System.out.println("Pattern saved to " + file.getAbsolutePath());
+        try {
+            QasmExporter.writeQasm(file, qubits, stepOperations); // stepOperations is List<List<GateOperation>>
+            bottomPanel.updateStatus("Saved QASM to: " + file.getName());
         } catch (IOException e) {
-            e.printStackTrace();
+            bottomPanel.updateStatus("Failed to save: " + e.getMessage());
         }
     }
+
 
     /**
      * Loads a grid pattern from a file.
@@ -256,38 +303,52 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
      * @param file File to load the pattern from.
      */
     public void loadPatternFromFile(File file) {
-        StringBuilder content = new StringBuilder();
+        stepOperations.clear();
+        clearGrid();  // reset board
+
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
+            int currentStep = -1;
+
             while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                if (line.startsWith("qreg")) {
+                    int start = line.indexOf('[') + 1;
+                    int end = line.indexOf(']');
+                    qubits = Integer.parseInt(line.substring(start, end));
+                    qubitsSpinner.getValueFactory().setValue(qubits);
+                    drawGrid();
+                } else if (line.startsWith("// STEP")) {
+                    currentStep++;
+                    stepOperations.add(new ArrayList<>());
+                } else if (line.contains("q[")) {
+                    String[] parts = line.replace(";", "").split("\\s+");
+                    String gate = parts[0];
+                    String[] qargs = parts[1].split(",");
+                    int[] qubitIndices = new int[qargs.length];
+                    for (int i = 0; i < qargs.length; i++) {
+                        int idxStart = qargs[i].indexOf('[') + 1;
+                        int idxEnd = qargs[i].indexOf(']');
+                        qubitIndices[i] = Integer.parseInt(qargs[i].substring(idxStart, idxEnd));
+                    }
+
+                    // Add to step list
+                    stepOperations.get(currentStep).add(new GateOperation(gate, qubitIndices));
+
+                    // Place visually only first qubit (you can improve this later)
+                    int row = qubitIndices[0];
+                    int col = currentStep;
+                    Button cell = cellButtons[row][col];
+                    cell.setText(gate.toUpperCase());
+                    cell.getStyleClass().add("gate-" + gate.toUpperCase());
+                }
             }
-            patternDisplayArea.setText(content.toString());
 
-            String[] lines = content.toString().split("\n");
-            String[] dims = lines[0].split(",");
-            qubits = Integer.parseInt(dims[0]);
-            steps = Integer.parseInt(dims[1]);
-
-            qubitsSpinner.getValueFactory().setValue(qubits);
-            stepsSpinner.getValueFactory().setValue(steps);
-            drawGrid();
-
-            for (int i = 1; i < lines.length; i++) {
-                String[] parts = lines[i].split(",");
-                int r = Integer.parseInt(parts[0]);
-                int c = Integer.parseInt(parts[1]);
-                String gate = parts[2];
-                Button cell = cellButtons[r][c];
-                cell.setText(gate);
-                cell.getStyleClass().add("gate-" + gate);
-            }
-
-            System.out.println("Pattern loaded from " + file.getAbsolutePath());
+            patternDisplayArea.setText("Loaded QASM: " + file.getName());
         } catch (IOException e) {
-            e.printStackTrace();
+            patternDisplayArea.setText("Failed to load: " + e.getMessage());
         }
     }
-
-
 }

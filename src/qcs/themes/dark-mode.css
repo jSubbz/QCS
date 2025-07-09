@@ -134,3 +134,6 @@
     -fx-text-fill: white;
     -fx-font-weight: bold;
 }
+.active-cell {
+    -fx-font-weight: bold;
+}

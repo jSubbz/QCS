@@ -48,3 +48,6 @@
     -fx-text-fill: #000000;
     -fx-font-weight: bold;
 }
+.active-cell {
+    -fx-font-weight: bold;
+}

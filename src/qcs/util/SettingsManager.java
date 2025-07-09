@@ -132,4 +132,8 @@ public class SettingsManager {
             System.err.println("Error saving settings: " + e.getMessage());
         }
     }
+    public void setDesignMode(boolean mode) {
+        this.designMode = mode;
+    }
+
 }

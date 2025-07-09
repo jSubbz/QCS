@@ -49,6 +49,8 @@ public class MainDriver extends Application implements EventBus.EventListener {
 
         BottomPanel bottomPanel = new BottomPanel();
         VBox bottomAreaMainPanel = bottomPanel.getPanel();
+        quantumCircuitPanel.setBottomPanel(bottomPanel);
+
 
         root.setBottom(bottomPanel.getPanel());
 

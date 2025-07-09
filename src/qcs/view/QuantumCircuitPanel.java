@@ -5,7 +5,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import qcs.model.GateOperation;
-import qcs.model.QasmExporter;
 import qcs.util.EventBus;
 import qcs.util.SettingsManager;
 
@@ -13,6 +12,12 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+import qcs.model.QuantumSimulator;
+import qcs.model.Complex;
+
 
 /**
  * QuantumCircuitPanel represents the grid area for displaying and managing quantum circuits.
@@ -35,7 +40,17 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     // Step simulation state
     private int currentStep = 0;
     private List<List<GateOperation>> stepOperations = new ArrayList<>();
-    private List<List<Double>> simulatedStates = new ArrayList<>();
+    private List<List<Complex>> simulatedStates = new ArrayList<>();
+
+    private Timeline playTimeline;
+    private Button simulateButton; // add if not already declared at the top
+    private HBox actionButtons;  // add this as a field at top of class
+    private Button modeToggleButton;
+
+    private HBox designModeButtons;
+    private HBox playModeButtons;
+    private List<Button> highlightedCells = new ArrayList<>();
+
 
 
     /**
@@ -105,21 +120,93 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
         });
 
+        Button toPlayModeButton = new Button("Go to Play Mode");
+        toPlayModeButton.setOnAction(e -> {
+            SettingsManager.getInstance().toggleMode();
+            EventBus.getInstance().publish("modeToggled");
+        });
+
+        designModeButtons = new HBox(10, toPlayModeButton);
+        designModeButtons.setAlignment(Pos.CENTER);
+
         newCircuitButton = new Button(bundle.getString("newCircuit"));
+        newCircuitButton.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Start a new circuit? All progress will be lost.",
+                    ButtonType.YES, ButtonType.NO);
+            confirm.setTitle("New Circuit");
+            var result = confirm.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.YES) {
+                stepOperations.clear();
+                simulatedStates.clear();
+                currentStep = 0;
+                drawGrid();
+                patternDisplayArea.clear();
+
+                SettingsManager.getInstance().setDesignMode(true);
+                EventBus.getInstance().publish("modeToggled");
+
+                if (bottomPanel != null)
+                    bottomPanel.updateStatus("Started a new circuit. Switched to design mode.");
+            }
+        });
+
         stepButton = new Button(bundle.getString("step"));
+        stepButton.setOnAction(e -> {
+            if (simulatedStates.isEmpty()) {
+                bottomPanel.updateStatus("No simulation loaded. Switch to Play Mode first.");
+                return;
+            }
+
+            if (currentStep < simulatedStates.size()) {
+                renderStep(currentStep++);
+            } else {
+                bottomPanel.updateStatus("Reached end of simulation.");
+            }
+        });
+
         resetButton = new Button(bundle.getString("reset"));
+        resetButton.setOnAction(e -> {
+            currentStep = 0;
+            patternDisplayArea.clear();
+            bottomPanel.updateStatus("Simulation reset to step 0.");
+        });
+
+        simulateButton = new Button("Simulate");
+        simulateButton.setOnAction(e -> {
+            simulateCircuit();
+            if (playTimeline != null && playTimeline.getStatus() == Timeline.Status.RUNNING) {
+                playTimeline.stop();
+            }
+
+            currentStep = 0;
+            playTimeline = new Timeline(new KeyFrame(Duration.seconds(0.5), event -> {
+                if (currentStep < simulatedStates.size()) {
+                    renderStep(currentStep++);
+                } else {
+                    playTimeline.stop();
+                }
+            }));
+            playTimeline.setCycleCount(simulatedStates.size());
+            playTimeline.play();
+        });
+
+        playModeButtons = new HBox(10, newCircuitButton, stepButton, resetButton, simulateButton);
+        playModeButtons.setAlignment(Pos.CENTER);
+
+        // Initial visibility
+        boolean isDesign = SettingsManager.getInstance().isDesignMode();
+        designModeButtons.setVisible(isDesign);
+        playModeButtons.setVisible(!isDesign);
 
         HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
         resizeControls.setAlignment(Pos.CENTER);
 
-        HBox actionButtons = new HBox(10, newCircuitButton, stepButton, resetButton);
-        actionButtons.setAlignment(Pos.CENTER);
-
-        VBox bottomControls = new VBox(10, resizeControls, actionButtons);
+        VBox bottomControls = new VBox(10, resizeControls, designModeButtons, playModeButtons);
         bottomControls.setAlignment(Pos.CENTER);
 
         panel.setBottom(bottomControls);
     }
+
 
     /**
      * Draws the interactive quantum circuit grid, with event handlers for cell interaction.
@@ -134,7 +221,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         gridPane.getRowConstraints().clear();
 
         cellButtons = new Button[qubits][steps];
-        stepOperations.clear(); // clear logic with new grid
+
+        // ✅ Re-initialize stepOperations to correct dimensions
+        stepOperations = new ArrayList<>();
+        for (int i = 0; i < steps; i++) {
+            stepOperations.add(new ArrayList<>());
+        }
 
         for (int c = 0; c < steps; c++) {
             ColumnConstraints cc = new ColumnConstraints();
@@ -158,10 +250,9 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 int finalR = r, finalC = c;
 
                 cell.setOnAction(e -> {
-                    // Clear old styles
                     cell.getStyleClass().removeIf(style -> style.startsWith("gate-") || style.equals("invalid-gate"));
 
-                    // Do nothing if no gate selected or not in design mode
+                    // ✅ Make sure selectedGate and mode are valid
                     if (!SettingsManager.getInstance().isDesignMode() || selectedGate == null || selectedGate.isEmpty()) {
                         cell.setText("");
                         if (bottomPanel != null)
@@ -172,43 +263,31 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                     int stepIndex = finalC;
                     int qubit = finalR;
 
-                    // Ensure we have a list for this step
-                    while (stepOperations.size() <= stepIndex) {
-                        stepOperations.add(new ArrayList<>());
-                    }
-
-                    // Logic for gate validity
+                    // 🧠 Determine if placement is valid and build targets
                     boolean valid = true;
-                    int[] targets;
+                    int[] targets = null;
 
                     switch (selectedGate.toUpperCase()) {
-                        case "CX":
-                        case "CU":
-                            if (qubit + 1 >= qubits) {
-                                valid = false;
-                            } else {
-                                targets = new int[]{qubit, qubit + 1};
-                                stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
-                            }
-                            break;
-
-                        case "CCX":
-                            if (qubit + 2 >= qubits) {
-                                valid = false;
-                            } else {
-                                targets = new int[]{qubit, qubit + 1, qubit + 2};
-                                stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
-                            }
-                            break;
-
-                        default:
-                            // Single qubit gate
+                        case "CX", "CU" -> {
+                            if (qubit + 1 >= qubits) valid = false;
+                            else targets = new int[]{qubit, qubit + 1};
+                        }
+                        case "CCX" -> {
+                            if (qubit + 2 >= qubits) valid = false;
+                            else targets = new int[]{qubit, qubit + 1, qubit + 2};
+                        }
+                        case "SWAP" -> {
+                            if (qubit + 1 >= qubits) valid = false;
+                            else targets = new int[]{qubit, qubit + 1};
+                        }
+                        default -> {
                             targets = new int[]{qubit};
-                            stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
-                            break;
+                        }
                     }
 
-                    if (valid) {
+                    // ✅ Add operation only if valid
+                    if (valid && targets != null) {
+                        stepOperations.get(stepIndex).add(new GateOperation(selectedGate.toLowerCase(), targets));
                         cell.setText(selectedGate);
                         cell.getStyleClass().add("gate-" + selectedGate);
                         if (bottomPanel != null)
@@ -226,6 +305,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             }
         }
     }
+
+
 
 
     /**
@@ -246,8 +327,25 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             selectedGate = eventType.substring("gateSelected:".length());
         } else if ("languageChanged".equals(eventType)) {
             updateUI();
+        } else if ("modeToggled".equals(eventType)) {
+            boolean playMode = !SettingsManager.getInstance().isDesignMode();
+
+            if (designModeButtons != null) designModeButtons.setVisible(!playMode);
+            if (playModeButtons != null)  playModeButtons.setVisible(playMode);
+
+            if (playMode) {
+                simulateCircuit();
+                if (bottomPanel != null)
+                    bottomPanel.updateStatus("Switched to play mode. Simulation ready.");
+            } else {
+                currentStep = 0;
+                if (bottomPanel != null)
+                    bottomPanel.updateStatus("Switched to design mode.");
+            }
         }
     }
+
+
 
     public BorderPane getPanel() {
         return panel;
@@ -288,12 +386,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
      * @param file File to save the pattern to.
      */
     public void savePatternToFile(File file) {
-        try {
-            QasmExporter.writeQasm(file, qubits, stepOperations); // stepOperations is List<List<GateOperation>>
-            bottomPanel.updateStatus("Saved QASM to: " + file.getName());
-        } catch (IOException e) {
-            bottomPanel.updateStatus("Failed to save: " + e.getMessage());
-        }
+        bottomPanel.updateStatus("Save feature not available yet.");
     }
 
 
@@ -351,4 +444,77 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             patternDisplayArea.setText("Failed to load: " + e.getMessage());
         }
     }
+
+    public void setBottomPanel(BottomPanel panel) {
+        this.bottomPanel = panel;
+    }
+    private void renderStep(int step) {
+        if (step < 0 || step >= simulatedStates.size()) {
+            bottomPanel.updateStatus("Step out of bounds.");
+            return;
+        }
+
+        // 🔄 Clear previous highlights
+        for (Button b : highlightedCells) {
+            b.getStyleClass().remove("active-cell");
+        }
+        highlightedCells.clear();
+
+        List<Complex> state = simulatedStates.get(step);
+        patternDisplayArea.clear();
+        patternDisplayArea.appendText("Step " + step + " state:\n");
+
+        int numQubits = (int) (Math.log(state.size()) / Math.log(2));
+
+        for (int i = 0; i < state.size(); i++) {
+            Complex amp = state.get(i);
+            String basis = String.format("|%s⟩",
+                    String.format("%" + numQubits + "s", Integer.toBinaryString(i)).replace(' ', '0'));
+            patternDisplayArea.appendText(basis + ": " + amp + "\n");
+        }
+
+        // 🔎 Highlight all qubits used in this step
+        if (step < stepOperations.size()) {
+            for (GateOperation op : stepOperations.get(step)) {
+                for (int q : op.qubits) {
+                    if (q >= 0 && q < qubits && step < steps) {
+                        Button cell = cellButtons[q][step];
+                        if (cell != null && !cell.getText().isEmpty()) {
+                            cell.getStyleClass().add("active-cell");
+                            highlightedCells.add(cell);
+                        }
+                    }
+                }
+            }
+        }
+
+        bottomPanel.updateStatus("Showing step " + step);
+    }
+
+
+
+
+    public void simulateCircuit() {
+        simulatedStates.clear();
+        QuantumSimulator sim = new QuantumSimulator(qubits);
+
+        for (List<GateOperation> step : stepOperations) {
+            for (GateOperation op : step) {
+                sim.applyGate(op);
+            }
+            simulatedStates.add(sim.copyState());
+        }
+
+        currentStep = 0;
+        if (bottomPanel != null) {
+            bottomPanel.updateStatus("Simulation complete. Ready to step.");
+        }
+    }
+
+
+    private void updateModeToggleButton() {
+        boolean isDesign = SettingsManager.getInstance().isDesignMode();
+        modeToggleButton.setText(isDesign ? "Go to Play Mode" : "Go to Design Mode");
+    }
+
 }

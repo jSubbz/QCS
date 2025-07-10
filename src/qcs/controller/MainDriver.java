@@ -8,10 +8,7 @@ import javafx.stage.Stage;
 import qcs.util.EventBus;
 import qcs.util.PropertiesValidator;
 import qcs.util.SettingsManager;
-import qcs.view.BottomPanel;
-import qcs.view.LeftPanel;
-import qcs.view.MenuBarPanel;
-import qcs.view.QuantumCircuitPanel;
+import qcs.view.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +57,9 @@ public class MainDriver extends Application implements EventBus.EventListener {
 
         primaryStage.setTitle("Quantum Circuit Simulator - Perry & Strange");
         primaryStage.setScene(scene);
-        primaryStage.show();
+        //primaryStage.show();
+        Splash splash = new Splash();
+        splash.showAndSwitch(primaryStage);
     }
 
     /**

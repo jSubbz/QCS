@@ -84,7 +84,7 @@ public class BottomPanel implements EventBus.EventListener {
         messageBoxPane.setMaxWidth(Double.MAX_VALUE);
 
 // Quantum simulation image
-        ImageView quantumImage = new ImageView(getClass().getResource("../quantum_states.jpg").toExternalForm());
+        ImageView quantumImage = new ImageView(getClass().getResource("/quantum_states.jpg").toExternalForm());
         quantumImage.setPreserveRatio(true);
         quantumImage.setFitWidth(200);
         quantumImage.setSmooth(true);

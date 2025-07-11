@@ -1,12 +1,8 @@
 package qcs.model;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 /**
  * A basic quantum simulator for a small number of qubits.
@@ -16,6 +12,11 @@ public class QuantumSimulator {
     private final int numQubits;
     private Complex[] state;
 
+    /**
+     * Constructs a new QuantumSimulator with a specified number of qubits.
+     * The initial state is |00...0⟩.
+     * @param numQubits The number of qubits in the simulator.
+     */
     public QuantumSimulator(int numQubits) {
         this.numQubits = numQubits;
         int size = 1 << numQubits;  // 2^n basis states
@@ -138,6 +139,7 @@ public class QuantumSimulator {
 
     /**
      * Returns a deep copy of the current state vector for rendering or stepping.
+     * @return a deep copy of the state vector.
      */
     public List<Complex> copyState() {
         List<Complex> copy = new ArrayList<>(state.length);

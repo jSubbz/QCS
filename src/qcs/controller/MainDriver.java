@@ -51,13 +51,13 @@ public class MainDriver extends Application implements EventBus.EventListener {
 
         root.setBottom(bottomPanel.getPanel());
 
-        scene = new Scene(root, 900, 750);
+        scene = new Scene(root, 950, 825);
         bottomAreaMainPanel.prefHeightProperty().bind(scene.heightProperty().multiply(.2)); //Defining max height of the message box
         applyTheme();
 
         primaryStage.setTitle("Quantum Circuit Simulator - Perry & Strange");
         primaryStage.setScene(scene);
-        //primaryStage.show();
+
         Splash splash = new Splash();
         splash.showAndSwitch(primaryStage);
     }

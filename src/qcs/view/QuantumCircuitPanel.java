@@ -487,6 +487,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 }
             }
         }
+        //update the graphic with new data
+        EventBus.getInstance().publish("graphicUpdate");
 
         bottomPanel.updateStatus("Showing step " + step);
     }
@@ -494,6 +496,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
 
 
 
+    /**
+     * Simulates the quantum circuit based on the defined {@code stepOperations}.
+     * It clears any previous simulation results, initializes a new {@link QuantumSimulator},
+     * applies gates step by step, and stores the quantum state after each step.
+     */
     public void simulateCircuit() {
         simulatedStates.clear();
         QuantumSimulator sim = new QuantumSimulator(qubits);
@@ -512,9 +519,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
 
+    /**
+     * Updates the text of the mode toggle button based on the current design mode status.
+     * If in design mode, the button text will prompt to switch to play mode, and vice-versa.
+     */
     private void updateModeToggleButton() {
         boolean isDesign = SettingsManager.getInstance().isDesignMode();
         modeToggleButton.setText(isDesign ? "Go to Play Mode" : "Go to Design Mode");
     }
-
 }

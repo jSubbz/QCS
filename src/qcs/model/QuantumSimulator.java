@@ -1,8 +1,12 @@
 package qcs.model;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A basic quantum simulator for a small number of qubits.
@@ -57,7 +61,6 @@ public class QuantumSimulator {
             }
         }
     }
-
 
     /**
      * Applies the Pauli-X gate to a single qubit.
@@ -143,6 +146,11 @@ public class QuantumSimulator {
         }
         return copy;
     }
+
+    /**
+     * Applies the Pauli-Z gate to a single qubit.
+     * @param qubit The index of the qubit to apply the Z gate to.
+     */
     private void applyZ(int qubit) {
         for (int i = 0; i < state.length; i++) {
             if (((i >> qubit) & 1) == 1) {
@@ -151,6 +159,11 @@ public class QuantumSimulator {
         }
     }
 
+    /**
+     * Applies a phase shift gate to a single qubit.
+     * @param qubit The index of the qubit to apply the phase shift to.
+     * @param angle The angle of the phase shift in radians.
+     */
     private void applyPhase(int qubit, double angle) {
         Complex phase = new Complex(Math.cos(angle), Math.sin(angle));
         for (int i = 0; i < state.length; i++) {
@@ -160,6 +173,11 @@ public class QuantumSimulator {
         }
     }
 
+    /**
+     * Applies a SWAP gate between two qubits.
+     * @param q1 The index of the first qubit.
+     * @param q2 The index of the second qubit.
+     */
     private void applySWAP(int q1, int q2) {
         if (q1 == q2) return;
 
@@ -176,5 +194,4 @@ public class QuantumSimulator {
             }
         }
     }
-
 }

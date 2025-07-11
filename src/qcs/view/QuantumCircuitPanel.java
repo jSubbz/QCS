@@ -392,8 +392,31 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
      * @param file File to save the pattern to.
      */
     public void savePatternToFile(File file) {
-        bottomPanel.updateStatus("Save feature not available yet.");
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println("OPENQASM 2.0;");
+            writer.println("include \"qelib1.inc\";");
+            writer.println("qreg q[" + qubits + "];");
+
+            for (int i = 0; i < stepOperations.size(); i++) {
+                writer.println("// STEP " + i);
+                for (GateOperation op : stepOperations.get(i)) {
+                    writer.print(op.gateName);
+                    for (int j = 0; j < op.qubits.length; j++) {
+                        writer.print(" q[" + op.qubits[j] + "]");
+                        if (j < op.qubits.length - 1) {
+                            writer.print(",");
+                        }
+                    }
+                    writer.println(";");
+                }
+            }
+
+            bottomPanel.updateStatus("Saved circuit to: " + file.getName());
+        } catch (IOException e) {
+            bottomPanel.updateStatus("Failed to save: " + e.getMessage());
+        }
     }
+
 
 
     /**

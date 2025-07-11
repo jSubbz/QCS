@@ -1,12 +1,16 @@
 package qcs.view;
 
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -14,6 +18,9 @@ import javafx.scene.layout.VBox;
 import qcs.util.EventBus;
 import qcs.util.SettingsManager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 /**
@@ -27,6 +34,9 @@ public class BottomPanel implements EventBus.EventListener {
     private Label tensorLabel;
     private TextField tensorTextField;
     private VBox mainBottomContainer;
+    private BarChart<String, Number> probabilityChart;
+    private XYChart.Series<String, Number> probabilitySeries;
+    private final ArrayList<String> labelArray = new ArrayList<>(Arrays.asList("0000","0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"));
 
     /**
      * Constructs a BottomPanel object.
@@ -34,6 +44,7 @@ public class BottomPanel implements EventBus.EventListener {
      */
     public BottomPanel() {
         EventBus.getInstance().subscribe(this);  // 🔥 Subscribe to listen for events like language change
+        setupChart(); // Sets up chart for display
         rebuildPanel();  // 🔥 Initial UI build
     }
 
@@ -79,23 +90,17 @@ public class BottomPanel implements EventBus.EventListener {
         messageBoxPane.setFitToHeight(true);
         messageBoxPane.setPrefWidth(500);
 
-// Allow scroll pane to stretch
+        // Allow scroll pane to stretch
         HBox.setHgrow(messageBoxPane, Priority.ALWAYS);
         messageBoxPane.setMaxWidth(Double.MAX_VALUE);
 
-// Quantum simulation image
-        ImageView quantumImage = new ImageView(getClass().getResource("/quantum_states.jpg").toExternalForm());
-        quantumImage.setPreserveRatio(true);
-        quantumImage.setFitWidth(200);
-        quantumImage.setSmooth(true);
-
-// Combined layout
-        HBox messageAndImageRow = new HBox(10, messageBoxPane, quantumImage);
+        // Combined layout
+        HBox messageAndImageRow = new HBox(10, messageBoxPane, probabilityChart);
         messageAndImageRow.setAlignment(Pos.CENTER);
         messageAndImageRow.setPadding(new Insets(5));
         messageAndImageRow.setFillHeight(true);
 
-// Add all to bottom container
+        // Add all to bottom container
         mainBottomContainer.getChildren().addAll(
                 tensorProductPane,
                 messageBoxLabel,
@@ -104,6 +109,57 @@ public class BottomPanel implements EventBus.EventListener {
         VBox.setVgrow(messageAndImageRow, Priority.ALWAYS);
     }
 
+    /**
+     * Generates a list of 16 values that add up to a 100% to represent the probabilities of the simulation
+     * @return List containing new generated values for the probabilities list
+     */
+    private ArrayList<Integer> generateProbabilities() {
+        ArrayList<Integer> probabilities = new ArrayList<>(16);
+        Random randomGenerator = new Random();
+        int currentSum = 0;
+        int fullSum = 100;
+        int numProbabilities = 16;
+
+        for (int i = 0; i < numProbabilities - 1; i++) {
+            int remainingSum = fullSum - currentSum;
+            int remainingProbabilities = numProbabilities - i;
+
+            // Calculate min and max possible value for the current probability
+            int min = Math.max(0, remainingSum - (remainingProbabilities - 1) * 100); // Ensure remaining can be 100
+            int max = Math.min(100, remainingSum); // Ensure we don't exceed remaining sum
+
+            int value = randomGenerator.nextInt(max - min + 1) + min;
+            probabilities.add(value);
+            currentSum += value;
+        }
+        probabilities.add(fullSum - currentSum); // The last probability takes the remaining sum
+
+        return probabilities;
+    }
+
+    /**
+     * Sets up the BarChart for displaying probabilities. Initializes the axes, chart, and series with default zero values.
+     */
+    private void setupChart(){
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setCategories(FXCollections.<String>observableArrayList(labelArray));
+        NumberAxis yAxis = new NumberAxis();
+        probabilityChart = new BarChart<>(xAxis, yAxis);
+        probabilitySeries = new XYChart.Series<>();
+        for(int i = 0; i < 16; i++)
+            probabilitySeries.getData().add(new XYChart.Data<>(labelArray.get(i), 0));
+        probabilityChart.getData().add(probabilitySeries);
+    }
+
+    /**
+     * Updates the BarChart with new probability values.
+     * @param probabilities An ArrayList of integers representing the new probability values for each category.
+     */
+    private void updateChart(ArrayList<Integer> probabilities){
+        for(int i = 0; i < 16; i++) {
+            probabilitySeries.getData().get(i).setYValue(probabilities.get(i));
+        }
+    }
 
     /**
      * Returns the VBox container holding the bottom panel UI components.
@@ -128,13 +184,16 @@ public class BottomPanel implements EventBus.EventListener {
     /**
      * Handles events published to the EventBus.
      * Rebuilds the UI when a "languageChanged" event is detected.
-     *
+     * Updates the barChart when a "graphicUpdate" event is detected.
      * @param eventType The type of event that occurred.
      */
     @Override
     public void onEvent(String eventType) {
         if ("languageChanged".equals(eventType)) {
             rebuildPanel();  // 🔥 Rebuild UI with new language settings
+        }
+        else if("graphicUpdate".equals(eventType)){
+            updateChart(generateProbabilities());
         }
     }
 }

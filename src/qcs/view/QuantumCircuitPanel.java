@@ -306,9 +306,6 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
-
-
-
     /**
      * Updates UI components to reflect current language and theme settings.
      */
@@ -321,6 +318,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         resetButton.setText(bundle.getString("reset"));
     }
 
+
+    /**
+     * Handles events published through the EventBus.
+     *
+     * @param eventType The type of event that occurred.
+     */
     @Override
     public void onEvent(String eventType) {
         if (eventType.startsWith("gateSelected:")) {
@@ -345,11 +348,14 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
-
-
+    /**
+     * Gets the circuit panel
+     * @return panel
+     */
     public BorderPane getPanel() {
         return panel;
     }
+
     /**
      * Checks if any cell in the grid contains text, indicating an active cell.
      *
@@ -445,9 +451,14 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         }
     }
 
+    /**
+     * Set the bottom panel object
+     * @param panel Panel to be set
+     */
     public void setBottomPanel(BottomPanel panel) {
         this.bottomPanel = panel;
     }
+
     private void renderStep(int step) {
         if (step < 0 || step >= simulatedStates.size()) {
             bottomPanel.updateStatus("Step out of bounds.");
@@ -487,6 +498,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 }
             }
         }
+        //update the graphic with new data
+        EventBus.getInstance().publish("graphicUpdate");
 
         bottomPanel.updateStatus("Showing step " + step);
     }
@@ -494,6 +507,11 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
 
 
 
+    /**
+     * Simulates the quantum circuit based on the defined {@code stepOperations}.
+     * It clears any previous simulation results, initializes a new {@link QuantumSimulator},
+     * applies gates step by step, and stores the quantum state after each step.
+     */
     public void simulateCircuit() {
         simulatedStates.clear();
         QuantumSimulator sim = new QuantumSimulator(qubits);
@@ -512,9 +530,12 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
 
+    /**
+     * Updates the text of the mode toggle button based on the current design mode status.
+     * If in design mode, the button text will prompt to switch to play mode, and vice-versa.
+     */
     private void updateModeToggleButton() {
         boolean isDesign = SettingsManager.getInstance().isDesignMode();
         modeToggleButton.setText(isDesign ? "Go to Play Mode" : "Go to Design Mode");
     }
-
 }

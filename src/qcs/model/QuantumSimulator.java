@@ -12,6 +12,11 @@ public class QuantumSimulator {
     private final int numQubits;
     private Complex[] state;
 
+    /**
+     * Constructs a new QuantumSimulator with a specified number of qubits.
+     * The initial state is |00...0⟩.
+     * @param numQubits The number of qubits in the simulator.
+     */
     public QuantumSimulator(int numQubits) {
         this.numQubits = numQubits;
         int size = 1 << numQubits;  // 2^n basis states
@@ -57,7 +62,6 @@ public class QuantumSimulator {
             }
         }
     }
-
 
     /**
      * Applies the Pauli-X gate to a single qubit.
@@ -135,6 +139,7 @@ public class QuantumSimulator {
 
     /**
      * Returns a deep copy of the current state vector for rendering or stepping.
+     * @return a deep copy of the state vector.
      */
     public List<Complex> copyState() {
         List<Complex> copy = new ArrayList<>(state.length);
@@ -143,6 +148,11 @@ public class QuantumSimulator {
         }
         return copy;
     }
+
+    /**
+     * Applies the Pauli-Z gate to a single qubit.
+     * @param qubit The index of the qubit to apply the Z gate to.
+     */
     private void applyZ(int qubit) {
         for (int i = 0; i < state.length; i++) {
             if (((i >> qubit) & 1) == 1) {
@@ -151,6 +161,11 @@ public class QuantumSimulator {
         }
     }
 
+    /**
+     * Applies a phase shift gate to a single qubit.
+     * @param qubit The index of the qubit to apply the phase shift to.
+     * @param angle The angle of the phase shift in radians.
+     */
     private void applyPhase(int qubit, double angle) {
         Complex phase = new Complex(Math.cos(angle), Math.sin(angle));
         for (int i = 0; i < state.length; i++) {
@@ -160,6 +175,11 @@ public class QuantumSimulator {
         }
     }
 
+    /**
+     * Applies a SWAP gate between two qubits.
+     * @param q1 The index of the first qubit.
+     * @param q2 The index of the second qubit.
+     */
     private void applySWAP(int q1, int q2) {
         if (q1 == q2) return;
 
@@ -176,5 +196,4 @@ public class QuantumSimulator {
             }
         }
     }
-
 }

@@ -132,6 +132,11 @@ public class SettingsManager {
             System.err.println("Error saving settings: " + e.getMessage());
         }
     }
+
+    /**
+     * Sets the design mode.
+     * @param mode true if in design mode, false if in play mode.
+     */
     public void setDesignMode(boolean mode) {
         this.designMode = mode;
     }

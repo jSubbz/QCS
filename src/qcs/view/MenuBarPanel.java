@@ -108,10 +108,20 @@ public class MenuBarPanel implements EventBus.EventListener {
         }
     }
 
+    /**
+     * Gets the menuBar component
+     * @return menuBar
+     */
     public MenuBar getMenuBar() {
         return menuBar;
     }
 
+    /**
+     * Event handling.
+     * Updates localization when a "languageChanged" event is detected
+     * Updates bar when "modeToggled" event is detected
+     * @param eventType the type of the event being triggered.
+     */
     @Override
     public void onEvent(String eventType) {
         if ("languageChanged".equals(eventType) || "modeToggled".equals(eventType)) {

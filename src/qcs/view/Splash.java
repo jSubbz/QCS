@@ -1,14 +1,13 @@
 package qcs.view;
 
 import javafx.animation.PauseTransition;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
@@ -22,33 +21,41 @@ import java.net.URL;
 public class Splash {
 
     private final Stage splashStage;
-    private static final double SPLASH_DURATION_SECONDS = 3.0;
+    private static final double SPLASH_DURATION_SECONDS = 2.0;
 
+    /**
+     * Constructs a new Splash object for the splash screen.
+     */
     public Splash() {
-        // 1. Create the main image view
+        // Create the main image view
         ImageView splashImageView = loadSplashImage();
 
-        // 2. Create the label for the team name
-        Label teamLabel = new Label("Created by Team Quantum");
-        // Style the label for better visibility (white text with a subtle drop shadow)
-        teamLabel.setStyle(
-                "-fx-font-size: 14px; " +
-                        "-fx-text-fill: white; " +
-                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.75), 3, 0, 0, 1);"
-        );
+        // Create the label for the team name
+        Label teamLabel = new Label("[Team: Jay Perry / Max Strange]");
+        // Style the label for better visibility (dark text on light background)
+        teamLabel.setStyle( "-fx-font-size: 14px; " +
+                            "-fx-text-fill: #808080; ");
 
-        // 3. Use a StackPane to overlay the label on the image
-        StackPane root = new StackPane(splashImageView, teamLabel);
-        root.setStyle("-fx-background-color: transparent;"); // Allows for non-rectangular splash images
+        //Create loading bar animation component
+        ProgressBar loadingBar = new ProgressBar();
+        loadingBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS); // This creates the animation
+        loadingBar.setPrefWidth(400);
 
-        // 4. Position the label at the bottom-center of the StackPane
-        StackPane.setAlignment(teamLabel, Pos.BOTTOM_CENTER);
+        // Group team name label and loading bar components
+        VBox bottomComponents = new VBox( teamLabel, loadingBar);
+        bottomComponents.setAlignment(Pos.CENTER);
+
+        // Stack the components vertically in another VBox
+        VBox root = new VBox( splashImageView, bottomComponents);
+        root.setAlignment(Pos.CENTER);
+        root.setStyle("-fx-background-color: #F4F4F4;");
+
         // Add some padding so the label isn't flush with the bottom edge
-        teamLabel.setPadding(new Insets(0, 0, 20, 0));
+
 
         // --- Scene and Stage Setup ---
-        Scene scene = new Scene(root, 400, 250, Color.TRANSPARENT);
-        splashStage = new Stage(StageStyle.TRANSPARENT); // An undecorated window
+        Scene scene = new Scene(root, 400, 245);
+        splashStage = new Stage(StageStyle.UNDECORATED); // An undecorated window
         splashStage.setScene(scene);
         splashStage.setTitle("QCS Loading...");
     }
@@ -82,24 +89,17 @@ public class Splash {
      */
     private ImageView loadSplashImage() {
         ImageView imageView = new ImageView();
-        String imagePath = "/QClogo.jpg";
+        String imagePath = "QClogo.jpg";
 
         try {
             URL imageUrl = getClass().getResource(imagePath);
-
-            // IMPORTANT: Check if the resource was found before using it to prevent a crash
-            if (imageUrl == null) {
-                System.err.println("Splash image not found!");
-            } else {
-                // If found, create the Image using the URL's external form
-                Image splashImage = new Image(imageUrl.toExternalForm());
-                imageView.setImage(splashImage);
-                imageView.setFitWidth(400);
-                imageView.setFitHeight(250);
-                imageView.setPreserveRatio(true);
-            }
+            Image splashImage = new Image(imageUrl.toExternalForm());
+            imageView.setImage(splashImage);
+            imageView.setFitWidth(400);
+            imageView.setFitHeight(200);
+            imageView.setPreserveRatio(true);
         } catch (Exception e) {
-            System.err.println("Failed to load splash image from path: " + imagePath);
+            System.out.println("Failed to load splash image from path: " + imagePath);
         }
         return imageView;
     }

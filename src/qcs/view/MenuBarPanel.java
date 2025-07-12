@@ -147,6 +147,7 @@ public class MenuBarPanel implements EventBus.EventListener {
     private void handleSave() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
         FileChooser chooser = new FileChooser();
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Quantum Assembly Language", "*.qasm"));
         chooser.setTitle(bundle.getString("savePattern"));
         File file = chooser.showSaveDialog(null);
         if (file != null) {
@@ -157,6 +158,7 @@ public class MenuBarPanel implements EventBus.EventListener {
     private void handleOpen() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
         FileChooser chooser = new FileChooser();
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Quantum Assembly Language", "*.qasm"));
         chooser.setTitle(bundle.getString("loadPattern"));
         File file = chooser.showOpenDialog(null);
         if (file != null) {

@@ -3,7 +3,9 @@ package qcs.view;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import qcs.model.GateOperation;
 import qcs.util.EventBus;
 import qcs.util.SettingsManager;
@@ -250,11 +252,20 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                 int finalR = r, finalC = c;
 
                 cell.setOnAction(e -> {
+
+                    if(!SettingsManager.getInstance().isDesignMode())
+                        return;
+
                     cell.getStyleClass().removeIf(style -> style.startsWith("gate-") || style.equals("invalid-gate"));
 
+
+
                     // ✅ Make sure selectedGate and mode are valid
-                    if (!SettingsManager.getInstance().isDesignMode() || selectedGate == null || selectedGate.isEmpty()) {
+                    if (SettingsManager.getInstance().isDesignMode() && (selectedGate == null || selectedGate.isEmpty())) {
                         cell.setText("");
+                        cell.getStyleClass().add("grid-cell");
+                        cell.setStyle(null);//clears inline styles
+                        stepOperations.get(finalC).removeIf(op -> op.qubits[0] == finalR);//remove from sim
                         if (bottomPanel != null)
                             bottomPanel.updateStatus("Cleared at " + finalR + "," + finalC);
                         return;
@@ -297,6 +308,85 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
                         cell.getStyleClass().add("invalid-gate");
                         if (bottomPanel != null)
                             bottomPanel.updateStatus("Invalid placement of " + selectedGate + " at row " + qubit);
+                    }
+                });
+
+                cell.setOnMouseClicked(event -> {
+                    if (event.getButton() == MouseButton.SECONDARY) {
+                        // Only proceed if the cell actually has a gate.
+                        if (cell.getText().isEmpty() || !SettingsManager.getInstance().isDesignMode()) {
+                            return;
+                        }
+
+                        final ContextMenu contextMenu = new ContextMenu();
+
+                        // --- 1. "Clear Gate" Option ---
+                        MenuItem clearGateMenuItem = new MenuItem("Clear Gate");
+                        clearGateMenuItem.setOnAction(e -> {
+                            // First, remove the gate from the underlying data model.
+                            stepOperations.get(finalC).removeIf(op -> op.qubits[0] == finalR);
+
+                            // Then, update the UI to reflect the removal.
+                            cell.setText("");
+                            cell.getStyleClass().removeIf(style -> style.startsWith("gate-") || style.equals("invalid-gate"));
+                            cell.setStyle(null); // This removes the inline background color.
+
+                            if (bottomPanel != null) {
+                                bottomPanel.updateStatus("Cleared gate at " + finalR + "," + finalC);
+                            }
+                        });
+                        contextMenu.getItems().add(clearGateMenuItem);
+
+                        // --- 2. "Set Color" Option (Corrected to apply to all matching gates) ---
+                        // Only add this option if it's a valid gate, not an error marker.
+                        if (!cell.getText().equals("❌")) {
+                            contextMenu.getItems().add(new SeparatorMenuItem());
+                            MenuItem setColorMenuItem = new MenuItem("Set Color...");
+
+                            setColorMenuItem.setOnAction(e -> {
+                                // Create a custom dialog to safely host the ColorPicker.
+                                Dialog<Color> colorDialog = new Dialog<>();
+                                colorDialog.setTitle("Choose Gate Color");
+                                colorDialog.setHeaderText("Select a color for all '" + cell.getText() + "' gates.");
+
+                                // Set the owner window to prevent the NullPointerException crash.
+                                colorDialog.initOwner(cell.getScene().getWindow());
+
+                                final ColorPicker dialogColorPicker = new ColorPicker();
+                                colorDialog.getDialogPane().setContent(dialogColorPicker);
+                                colorDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+                                // Convert the result to a Color object when the OK button is clicked.
+                                colorDialog.setResultConverter(dialogButton -> {
+                                    if (dialogButton == ButtonType.OK) {
+                                        return dialogColorPicker.getValue();
+                                    }
+                                    return null;
+                                });
+
+                                // Show the dialog and wait for the user to choose a color.
+                                colorDialog.showAndWait().ifPresent(newColor -> {
+                                    String gateTypeToColor = cell.getText();
+                                    String hexColor = String.format("#%02X%02X%02X",
+                                            (int) (newColor.getRed() * 255),
+                                            (int) (newColor.getGreen() * 255),
+                                            (int) (newColor.getBlue() * 255));
+
+                                    // Apply to all cells of the same time
+                                    for (int i = 0; i < qubits; i++) {
+                                        for (int j = 0; j < steps; j++) {
+                                            if (cellButtons[i][j] != null && cellButtons[i][j].getText().equals(gateTypeToColor)) {
+                                                cellButtons[i][j].setStyle("-fx-background-color: " + hexColor + ";");
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                            contextMenu.getItems().add(setColorMenuItem);
+                        }
+
+                        // Show the context menu at the mouse position.
+                        contextMenu.show(cell, event.getScreenX(), event.getScreenY());
                     }
                 });
 

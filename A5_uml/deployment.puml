@@ -1,0 +1,22 @@
+@startuml
+title QCS 3-Tier Deployment Diagram
+
+node "Client Node" {
+  artifact "JavaFX UI"
+  artifact "MVC Circuit Engine"
+}
+
+node "Server Node" {
+  artifact "ConnectionHandler"
+  artifact "ProtocolManager"
+}
+
+node "Database Node" {
+  artifact "SQLite DB (Users, Circuits)"
+}
+
+"JavaFX UI" --> "ConnectionHandler" : connect / sendCircuit()
+"ConnectionHandler" --> "ProtocolManager" : encode/decode
+"ProtocolManager" --> "SQLite DB (Users, Circuits)" : SQL read/write
+
+@enduml

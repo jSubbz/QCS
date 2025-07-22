@@ -1,0 +1,32 @@
+@startuml
+title Quantum Circuit Simulator - Database Schema
+
+entity "Users" as U {
+  * id : INTEGER <<PK>>
+  --
+  username : TEXT <<UNIQUE>>
+  password_hash : TEXT
+}
+
+entity "QuantumCircuits" as QC {
+  * id : INTEGER <<PK>>
+  --
+  user_id : INTEGER <<FK>>
+  filename : TEXT
+  circuit_data : TEXT
+  created_at : DATETIME
+}
+
+entity "CircuitResults" as CR {
+  * id : INTEGER <<PK>>
+  --
+  circuit_id : INTEGER <<FK>>
+  result_data : TEXT
+  executed_at : DATETIME
+}
+
+' Relationships
+U ||--o{ QC : owns >
+QC ||--o{ CR : has >
+
+@enduml

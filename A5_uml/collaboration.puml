@@ -1,0 +1,35 @@
+@startuml
+' Define actors and participants
+actor User
+participant LoginScreen
+participant AuthDatabase
+participant ClientApp
+participant ServerApp
+participant Protocol
+participant QCSDatabase
+
+title QCS Client-Server Collaboration Diagram
+
+== Login Process ==
+User -> LoginScreen : 1. enterCredentials()
+LoginScreen -> AuthDatabase : 2. validateCredentials()
+AuthDatabase --> LoginScreen : 3. returnLoginResult()
+LoginScreen -> ClientApp : 4. launchClient()
+
+== Client/Server Communication ==
+ClientApp -> ServerApp : 5. connect(port, user)
+ClientApp -> Protocol : 6. encode("send circuit")
+Protocol -> ServerApp : 7. send(encodedMsg)
+ServerApp -> Protocol : 8. decodeMessage()
+ServerApp -> QCSDatabase : 9. storeCircuit()
+ServerApp -> Protocol : 10. encode("ack")
+Protocol -> ClientApp : 11. response("ack")
+
+ClientApp -> Protocol : 12. encode("get circuit")
+Protocol -> ServerApp : 13. sendRequest()
+ServerApp -> QCSDatabase : 14. fetchCircuit()
+QCSDatabase -> ServerApp : 15. returnCircuit()
+ServerApp -> Protocol : 16. encode(circuit)
+Protocol -> ClientApp : 17. deliver(circuit)
+
+@enduml

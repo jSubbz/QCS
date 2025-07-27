@@ -6,6 +6,8 @@ node "Client Node" {
   artifact "MVC Circuit Engine"
 }
 
+node "Login Handler"
+
 node "Server Node" {
   artifact "ConnectionHandler"
   artifact "ProtocolManager"
@@ -15,6 +17,8 @@ node "Database Node" {
   artifact "SQLite DB (Users, Circuits)"
 }
 
+"Client Node" <--> "Login Handler"
+"Login Handler" <--> "Server Node"
 "JavaFX UI" --> "ConnectionHandler" : connect / sendCircuit()
 "ConnectionHandler" --> "ProtocolManager" : encode/decode
 "ProtocolManager" --> "SQLite DB (Users, Circuits)" : SQL read/write

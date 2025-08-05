@@ -7,7 +7,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import qcs.db.DatabaseManager; // Import DB handler
+import qcs.controller.MainDriver;
+import qcs.network.ClientRequest;
+import qcs.network.RequestType;
+import qcs.network.ServerResponse;
+
+import java.io.*;
+import java.net.Socket;
 
 public class LoginScreen extends Application {
 
@@ -15,11 +21,11 @@ public class LoginScreen extends Application {
     private PasswordField passwordField;
     private Button signInButton, signUpButton;
 
+    private static final String SERVER_HOST = "localhost";
+    private static final int SERVER_PORT = 12345;
+
     @Override
     public void start(Stage primaryStage) {
-        // Initialize the database
-        DatabaseManager.initializeDatabase();
-
         primaryStage.setTitle("Login - Quantum Circuit Simulator");
 
         Label titleLabel = new Label("QUANTUM CIRCUIT SIMULATOR");
@@ -62,22 +68,26 @@ public class LoginScreen extends Application {
             return;
         }
 
-        boolean valid = DatabaseManager.validateUser(user, pass);
+        ClientRequest request = new ClientRequest(RequestType.LOGIN);
+        request.setUsername(user);
+        request.setPassword(pass);
 
-        if (valid) {
-            showAlert("Success", "Login successful!");
+        ServerResponse response = sendToServer(request);
 
-            // Launch the client GUI (replace with your actual class)
+        if (response == null) {
+            showAlert("Error", "Could not connect to server.");
+        } else if (response.isSuccess()) {
+            showAlert("Success", response.getMessage());
+
             try {
-                new qcs.controller.MainDriver().start(new Stage());
-
-                stage.close(); // Close login
+                new MainDriver().start(new Stage());
+                stage.close();
             } catch (Exception e) {
                 showAlert("Error", "Failed to launch client: " + e.getMessage());
                 e.printStackTrace();
             }
         } else {
-            showAlert("Error", "Invalid credentials.");
+            showAlert("Login Failed", response.getMessage());
         }
     }
 
@@ -90,12 +100,40 @@ public class LoginScreen extends Application {
             return;
         }
 
-        boolean created = DatabaseManager.createUser(user, pass);
+        ClientRequest request = new ClientRequest(RequestType.SIGNUP);
+        request.setUsername(user);
+        request.setPassword(pass);
 
-        if (created) {
-            showAlert("Success", "Account created. You can now sign in.");
+        ServerResponse response = sendToServer(request);
+
+        if (response == null) {
+            showAlert("Error", "Could not connect to server.");
+        } else if (response.isSuccess()) {
+            showAlert("Success", response.getMessage());
         } else {
-            showAlert("Error", "Username already exists or error occurred.");
+            showAlert("Sign Up Failed", response.getMessage());
+        }
+    }
+
+    private ServerResponse sendToServer(ClientRequest request) {
+        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+            out.writeObject(request);
+            out.flush();
+
+            Object response = in.readObject();
+            if (response instanceof ServerResponse serverResponse) {
+                return serverResponse;
+            } else {
+                System.err.println("Invalid response from server.");
+                return null;
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error communicating with server: " + e.getMessage());
+            return null;
         }
     }
 

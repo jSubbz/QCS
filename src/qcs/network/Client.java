@@ -5,8 +5,9 @@ import java.net.Socket;
 
 public class Client {
 
-    private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 12345;
+    public static final String SERVER_HOST = "localhost";
+    public static final int SERVER_PORT = 12345;
+
 
     private Socket socket;
     private ObjectOutputStream out;

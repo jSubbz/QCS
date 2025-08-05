@@ -11,9 +11,12 @@ import java.io.*;
  */
 public class SettingsManager {
     private static SettingsManager instance;
+
     private String currentLanguage = "en";
     private String currentTheme = "dark-mode";
     private boolean designMode = true;
+
+    private String username; // Stores currently logged-in username
 
     private static final String CONFIG_FILE = "settings.properties";
     private final Properties props = new Properties();
@@ -38,21 +41,12 @@ public class SettingsManager {
         return instance;
     }
 
-    /**
-     * Gets the current language setting.
-     *
-     * @return the current language code (e.g., "en", "de").
-     */
+    // === Language Settings ===
+
     public String getLanguage() {
         return currentLanguage;
     }
 
-    /**
-     * Sets the current language and saves the change.
-     * Publishes a "languageChanged" event.
-     *
-     * @param lang the new language code.
-     */
     public void setLanguage(String lang) {
         currentLanguage = lang;
         props.setProperty("language", lang);
@@ -60,21 +54,12 @@ public class SettingsManager {
         EventBus.getInstance().publish("languageChanged");
     }
 
-    /**
-     * Gets the current theme setting.
-     *
-     * @return the current theme name.
-     */
+    // === Theme Settings ===
+
     public String getTheme() {
         return currentTheme;
     }
 
-    /**
-     * Sets the current theme and saves the change.
-     * Publishes a "themeChanged" event.
-     *
-     * @param theme the new theme name.
-     */
     public void setTheme(String theme) {
         currentTheme = theme;
         props.setProperty("theme", theme);
@@ -82,36 +67,39 @@ public class SettingsManager {
         EventBus.getInstance().publish("themeChanged");
     }
 
-    /**
-     * Checks if the application is in design mode.
-     *
-     * @return true if in design mode, false if in play mode.
-     */
+    // === Mode Handling ===
+
     public boolean isDesignMode() {
         return designMode;
     }
 
-    /**
-     * Toggles between design and play modes.
-     * Publishes a "modeToggled" event.
-     */
     public void toggleMode() {
         designMode = !designMode;
         EventBus.getInstance().publish("modeToggled");
     }
 
-    /**
-     * Retrieves the ResourceBundle for the current language.
-     *
-     * @return the ResourceBundle containing localized strings.
-     */
+    public void setDesignMode(boolean mode) {
+        this.designMode = mode;
+    }
+
+    // === Username / Session ===
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    // === Resource Bundle for Localization ===
+
     public ResourceBundle getBundle() {
         return ResourceBundle.getBundle("qcs.messages", new Locale(currentLanguage));
     }
 
-    /**
-     * Loads settings from the configuration file. If the file doesn't exist, default values are used.
-     */
+    // === Persistence ===
+
     private void loadSettings() {
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
             props.load(reader);
@@ -122,9 +110,6 @@ public class SettingsManager {
         }
     }
 
-    /**
-     * Saves the current settings to the configuration file.
-     */
     private void saveSettings() {
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             props.store(writer, "User Settings");
@@ -132,13 +117,4 @@ public class SettingsManager {
             System.err.println("Error saving settings: " + e.getMessage());
         }
     }
-
-    /**
-     * Sets the design mode.
-     * @param mode true if in design mode, false if in play mode.
-     */
-    public void setDesignMode(boolean mode) {
-        this.designMode = mode;
-    }
-
 }

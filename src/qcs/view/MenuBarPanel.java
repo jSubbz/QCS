@@ -146,12 +146,57 @@ public class MenuBarPanel implements EventBus.EventListener {
 
     private void handleSave() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
-        FileChooser chooser = new FileChooser();
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Quantum Assembly Language", "*.qasm"));
-        chooser.setTitle(bundle.getString("savePattern"));
-        File file = chooser.showSaveDialog(null);
-        if (file != null) {
-            gridPanel.savePatternToFile(file);
+
+        // Popup menu with two options
+        Alert saveChoice = new Alert(Alert.AlertType.CONFIRMATION);
+        saveChoice.setTitle(bundle.getString("menuSave"));
+        saveChoice.setHeaderText("Choose Save Method");
+        saveChoice.setContentText("Do you want to save locally or to the database?");
+
+        ButtonType localBtn = new ButtonType("Save Locally");
+        ButtonType dbBtn = new ButtonType("Save to Database");
+        ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        saveChoice.getButtonTypes().setAll(localBtn, dbBtn, cancelBtn);
+
+        saveChoice.showAndWait().ifPresent(result -> {
+            if (result == localBtn) {
+                FileChooser chooser = new FileChooser();
+                chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Quantum Assembly Language", "*.qasm"));
+                chooser.setTitle(bundle.getString("savePattern"));
+                File file = chooser.showSaveDialog(null);
+                if (file != null) {
+                    gridPanel.savePatternToFile(file);
+                }
+            } else if (result == dbBtn) {
+                saveToDatabase();
+            }
+        });
+    }
+
+    private void saveToDatabase() {
+        String circuitJson = gridPanel.exportToJson();
+        String username = SettingsManager.getInstance().getUsername();
+
+        if (username == null || username.isEmpty()) {
+            showStatus("Error: No user is logged in.");
+            return;
+        }
+
+        boolean success = qcs.db.DatabaseManager.saveCircuit(username, circuitJson);
+
+        if (success) {
+            showStatus("✅ Circuit saved to database for user: " + username);
+        } else {
+            showStatus("❌ Failed to save circuit to database.");
+        }
+    }
+
+    private void showStatus(String message) {
+        if (gridPanel != null && gridPanel.getBottomPanel() != null) {
+            gridPanel.getBottomPanel().updateStatus(message);
+        } else {
+            System.out.println(message);
         }
     }
 

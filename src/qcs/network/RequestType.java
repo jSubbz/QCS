@@ -5,5 +5,8 @@ public enum RequestType {
     SIGNUP,
     MESSAGE,
     CIRCUIT_DATA,
-    EXIT
+    EXIT,
+    SAVE_CIRCUIT,
+    LOAD_CIRCUIT
+
 }

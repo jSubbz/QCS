@@ -1,23 +1,34 @@
 package qcs.network;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class ServerResponse implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     private boolean success;
     private String message;
-
-    public ServerResponse(boolean success, String message) {
-        this.success = success;
-        this.message = message;
-    }
+    private List<String> circuits; // for LOAD_CIRCUITS
 
     public boolean isSuccess() {
         return success;
     }
 
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
     public String getMessage() {
         return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public List<String> getCircuits() {
+        return circuits;
+    }
+
+    public void setCircuits(List<String> circuits) {
+        this.circuits = circuits;
     }
 }

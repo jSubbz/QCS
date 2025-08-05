@@ -1,16 +1,29 @@
 package qcs.view;
+import qcs.network.*;
 
+import java.net.Socket;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import qcs.network.Client;
+import qcs.network.ClientRequest;
+import qcs.network.RequestType;
+import qcs.network.ServerResponse;
+import qcs.util.SettingsManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import qcs.model.GateOperation;
+import qcs.network.ClientRequest;
+import qcs.network.RequestType;
 import qcs.util.EventBus;
 import qcs.util.SettingsManager;
 
 import java.io.*;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -19,6 +32,9 @@ import javafx.animation.Timeline;
 import javafx.util.Duration;
 import qcs.model.QuantumSimulator;
 import qcs.model.Complex;
+
+import static qcs.network.Client.SERVER_HOST;
+import static qcs.network.Client.SERVER_PORT;
 
 
 /**
@@ -192,6 +208,58 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             playTimeline.play();
         });
 
+        // ✅ Save to DB
+        Button saveButton = new Button("Save to DB");
+        saveButton.setOnAction(e -> {
+            String username = SettingsManager.getInstance().getUsername();
+            String json = exportToJson();
+
+            CircuitDataRequest saveRequest = new CircuitDataRequest(username, json);
+            saveRequest.setType(RequestType.SAVE_CIRCUIT);
+
+            ServerResponse response = NetworkClient.sendRequest(saveRequest);
+
+            if (response != null && response.isSuccess()) {
+                showAlert("Circuit saved to DB successfully.");
+            } else {
+                showAlert("Failed to save circuit.");
+            }
+        });
+
+        // ✅ Load from DB
+        Button loadButton = new Button("Load from DB");
+        loadButton.setOnAction(e -> {
+            ClientRequest loadRequest = new ClientRequest(RequestType.LOAD_CIRCUIT);
+            loadRequest.setUsername(SettingsManager.getInstance().getUsername());
+
+            ServerResponse response = NetworkClient.sendRequest(loadRequest);
+
+            if (response != null && response.isSuccess()) {
+                List<String> circuits = response.getCircuits();
+                if (!circuits.isEmpty()) {
+                    ChoiceDialog<String> dialog = new ChoiceDialog<>(circuits.get(0), circuits);
+                    dialog.setTitle("Load Circuit");
+                    dialog.setHeaderText("Select a saved circuit to load:");
+                    dialog.setContentText("Circuit:");
+
+                    dialog.showAndWait().ifPresent(selected -> {
+                        loadPatternFromJson(selected);
+                        if (bottomPanel != null) {
+                            bottomPanel.updateStatus("Loaded circuit from DB.");
+                        }
+                    });
+                } else {
+                    showAlert("No saved circuits found.");
+                }
+            } else {
+                showAlert("Failed to load circuits from server.");
+            }
+        });
+
+        // ➕ Add save/load to layout
+        HBox dbButtons = new HBox(10, saveButton, loadButton);
+        dbButtons.setAlignment(Pos.CENTER);
+
         playModeButtons = new HBox(10, newCircuitButton, stepButton, resetButton, simulateButton);
         playModeButtons.setAlignment(Pos.CENTER);
 
@@ -203,11 +271,13 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
         resizeControls.setAlignment(Pos.CENTER);
 
-        VBox bottomControls = new VBox(10, resizeControls, designModeButtons, playModeButtons);
+        VBox bottomControls = new VBox(10, resizeControls, dbButtons, designModeButtons, playModeButtons);
         bottomControls.setAlignment(Pos.CENTER);
 
         panel.setBottom(bottomControls);
     }
+
+
 
 
     /**
@@ -414,6 +484,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
      *
      * @param eventType The type of event that occurred.
      */
+
     @Override
     public void onEvent(String eventType) {
         if (eventType.startsWith("gateSelected:")) {
@@ -424,7 +495,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             boolean playMode = !SettingsManager.getInstance().isDesignMode();
 
             if (designModeButtons != null) designModeButtons.setVisible(!playMode);
-            if (playModeButtons != null)  playModeButtons.setVisible(playMode);
+            if (playModeButtons != null) playModeButtons.setVisible(playMode);
 
             if (playMode) {
                 simulateCircuit();
@@ -651,4 +722,107 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         boolean isDesign = SettingsManager.getInstance().isDesignMode();
         modeToggleButton.setText(isDesign ? "Go to Play Mode" : "Go to Design Mode");
     }
+    public String exportToJson() {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"qubits\":").append(qubits).append(",\"gates\":[");
+        boolean first = true;
+
+        for (int step = 0; step < stepOperations.size(); step++) {
+            for (GateOperation op : stepOperations.get(step)) {
+                if (!first) json.append(",");
+                json.append("{\"type\":\"").append(op.gateName.toUpperCase()).append("\",");
+                json.append("\"step\":").append(step).append(",");
+                json.append("\"targets\":[");
+                for (int i = 0; i < op.qubits.length; i++) {
+                    json.append(op.qubits[i]);
+                    if (i < op.qubits.length - 1) json.append(",");
+                }
+                json.append("]}");
+                first = false;
+            }
+        }
+
+        json.append("]}");
+        return json.toString();
+    }
+
+    public BottomPanel getBottomPanel() {
+        return bottomPanel;
+    }
+
+    public void loadPatternFromJson(String json) {
+        stepOperations.clear();
+        clearGrid();
+        try {
+            int qIdx = json.indexOf("\"qubits\":") + 9;
+            int qEnd = json.indexOf(',', qIdx);
+            qubits = Integer.parseInt(json.substring(qIdx, qEnd));
+            qubitsSpinner.getValueFactory().setValue(qubits);
+
+            List<List<GateOperation>> newSteps = new ArrayList<>();
+            for (int i = 0; i < steps; i++) newSteps.add(new ArrayList<>());
+
+            String gateArray = json.substring(json.indexOf("["), json.lastIndexOf("]") + 1);
+            String[] gates = gateArray.split("\\},\\{");
+
+            for (String g : gates) {
+                String cleaned = g.replace("[", "").replace("]", "").replace("{", "").replace("}", "");
+                String[] parts = cleaned.split(",");
+                String type = parts[0].split(":")[1].replaceAll("\"", "").trim();
+                int step = Integer.parseInt(parts[1].split(":")[1].trim());
+                String[] targetsStr = parts[2].split(":")[1].replaceAll("[\\[\\]]", "").split(",");
+
+                int[] targets = new int[targetsStr.length];
+                for (int i = 0; i < targetsStr.length; i++) {
+                    targets[i] = Integer.parseInt(targetsStr[i].replaceAll("[^0-9]", ""));
+                }
+
+                newSteps.get(step).add(new GateOperation(type.toLowerCase(), targets));
+            }
+
+            stepOperations = newSteps;
+            drawGrid();
+            for (int c = 0; c < stepOperations.size(); c++) {
+                for (GateOperation op : stepOperations.get(c)) {
+                    Button cell = cellButtons[op.qubits[0]][c];
+                    cell.setText(op.gateName.toUpperCase());
+                    cell.getStyleClass().add("gate-" + op.gateName.toUpperCase());
+                }
+            }
+            patternDisplayArea.setText("Circuit loaded from DB.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            patternDisplayArea.setText("Failed to parse circuit: " + e.getMessage());
+        }
+    }
+
+    private ServerResponse sendToServer(ClientRequest request) {
+        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+            out.writeObject(request);
+            out.flush();
+
+            Object response = in.readObject();
+            if (response instanceof ServerResponse serverResponse) {
+                return serverResponse;
+            } else {
+                System.err.println("Invalid response from server.");
+                return null;
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error communicating with server: " + e.getMessage());
+            return null;
+        }
+    }
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
 }

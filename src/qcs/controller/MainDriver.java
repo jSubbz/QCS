@@ -1,5 +1,13 @@
 package qcs.controller;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+import qcs.network.CircuitDataRequest;
+import qcs.network.ServerResponse;
+
 import javafx.scene.layout.VBox;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -88,6 +96,28 @@ public class MainDriver extends Application implements EventBus.EventListener {
             root.setTop(menuBarPanel.getMenuBar());  // Replace old menu with new one
         } else if ("themeChanged".equals(eventType)) {
             applyTheme();  // Update the Scene's stylesheet
+        }
+    }
+
+
+    public static void sendTestCircuit(String username) {
+        try (Socket socket = new Socket("localhost", 12345);
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+            String fakeCircuitJson = "{\"qubits\":2,\"gates\":[{\"type\":\"H\",\"target\":0}]}";
+
+            CircuitDataRequest request = new CircuitDataRequest(username, fakeCircuitJson);
+            out.writeObject(request);
+            out.flush();
+
+            Object response = in.readObject();
+            if (response instanceof ServerResponse res) {
+                System.out.println("Server reply: " + res.getMessage());
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Failed to send circuit: " + e.getMessage());
         }
     }
 

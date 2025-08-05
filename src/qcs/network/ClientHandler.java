@@ -4,6 +4,7 @@ import qcs.db.DatabaseManager;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler implements Runnable {
 
@@ -21,6 +22,8 @@ public class ClientHandler implements Runnable {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
+            DatabaseManager.createCircuitTable(); // Ensure table exists
+
             System.out.println("Client handler started.");
 
             while (true) {
@@ -28,14 +31,25 @@ public class ClientHandler implements Runnable {
 
                 if (obj instanceof ClientRequest request) {
                     switch (request.getType()) {
-                        case LOGIN -> handleLogin(request);
-                        case SIGNUP -> handleSignup(request);
-                        case EXIT -> {
+                        case LOGIN:
+                            handleLogin(request);
+                            break;
+                        case SIGNUP:
+                            handleSignup(request);
+                            break;
+                        case CIRCUIT_DATA:
+                            handleCircuitData((CircuitDataRequest) request);
+                            break;
+                        case LOAD_CIRCUIT:
+                            handleLoadCircuit(request);
+                            break;
+                        case EXIT:
                             System.out.println("Client requested disconnect.");
                             socket.close();
                             return;
-                        }
-                        default -> sendResponse(false, "Unsupported request type.");
+                        default:
+                            sendResponse(false, "Unsupported request type.");
+                            break;
                     }
                 } else {
                     sendResponse(false, "Invalid object received.");
@@ -71,8 +85,31 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleCircuitData(CircuitDataRequest req) throws IOException {
+        boolean saved = DatabaseManager.saveCircuit(req.getUsername(), req.getCircuitJson());
+        if (saved) {
+            sendResponse(true, "Circuit saved successfully.");
+        } else {
+            sendResponse(false, "Failed to save circuit.");
+        }
+    }
+
+    private void handleLoadCircuit(ClientRequest request) throws IOException {
+        List<String> circuits = DatabaseManager.getCircuitsForUser(request.getUsername());
+
+        ServerResponse loadResponse = new ServerResponse();
+        loadResponse.setSuccess(true);
+        loadResponse.setMessage("Circuits loaded successfully.");
+        loadResponse.setCircuits(circuits);
+
+        out.writeObject(loadResponse);
+        out.flush();
+    }
+
     private void sendResponse(boolean success, String message) throws IOException {
-        ServerResponse response = new ServerResponse(success, message);
+        ServerResponse response = new ServerResponse();
+        response.setSuccess(success);
+        response.setMessage(message);
         out.writeObject(response);
         out.flush();
     }

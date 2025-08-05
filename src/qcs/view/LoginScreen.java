@@ -11,6 +11,7 @@ import qcs.controller.MainDriver;
 import qcs.network.ClientRequest;
 import qcs.network.RequestType;
 import qcs.network.ServerResponse;
+import qcs.util.SettingsManager;
 
 import java.io.*;
 import java.net.Socket;
@@ -79,6 +80,12 @@ public class LoginScreen extends Application {
         } else if (response.isSuccess()) {
             showAlert("Success", response.getMessage());
 
+            // ✅ Store username globally
+            SettingsManager.getInstance().setUsername(user);
+
+            // 🧪 Optional test: save a dummy circuit
+            MainDriver.sendTestCircuit(user);
+
             try {
                 new MainDriver().start(new Stage());
                 stage.close();
@@ -90,6 +97,7 @@ public class LoginScreen extends Application {
             showAlert("Login Failed", response.getMessage());
         }
     }
+
 
     private void handleSignUp() {
         String user = usernameField.getText().trim();

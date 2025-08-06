@@ -4,7 +4,7 @@ import qcs.network.*;
 import java.net.Socket;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import qcs.network.Client;
+
 import qcs.network.ClientRequest;
 import qcs.network.RequestType;
 import qcs.network.ServerResponse;
@@ -15,15 +15,10 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.stage.FileChooser;
 import qcs.model.GateOperation;
-import qcs.network.ClientRequest;
-import qcs.network.RequestType;
 import qcs.util.EventBus;
-import qcs.util.SettingsManager;
 
 import java.io.*;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -209,20 +204,30 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         });
 
         // ✅ Save to DB
+        // ✅ Save to DB
         Button saveButton = new Button("Save to DB");
         saveButton.setOnAction(e -> {
             String username = SettingsManager.getInstance().getUsername();
+            // ✅ Add a check for the username to ensure the user is logged in.
+            if (username == null || username.isEmpty()) {
+                showAlert("Cannot save: Not logged in.");
+                return;
+            }
             String json = exportToJson();
 
+            // The constructor now correctly sets the username in the parent request object.
             CircuitDataRequest saveRequest = new CircuitDataRequest(username, json);
-            saveRequest.setType(RequestType.SAVE_CIRCUIT);
 
-            ServerResponse response = NetworkClient.sendRequest(saveRequest);
+            // ❌ This confusing line is now removed.
+            // saveRequest.setType(RequestType.SAVE_CIRCUIT);
+
+            ServerResponse response = NetworkClient.getInstance().sendRequest(saveRequest);
 
             if (response != null && response.isSuccess()) {
                 showAlert("Circuit saved to DB successfully.");
             } else {
-                showAlert("Failed to save circuit.");
+                String errorMsg = (response != null) ? response.getMessage() : "No response from server.";
+                showAlert("Failed to save circuit. " + errorMsg);
             }
         });
 
@@ -232,7 +237,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             ClientRequest loadRequest = new ClientRequest(RequestType.LOAD_CIRCUIT);
             loadRequest.setUsername(SettingsManager.getInstance().getUsername());
 
-            ServerResponse response = NetworkClient.sendRequest(loadRequest);
+            ServerResponse response = NetworkClient.getInstance().sendRequest(loadRequest);
 
             if (response != null && response.isSuccess()) {
                 List<String> circuits = response.getCircuits();
@@ -722,6 +727,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         boolean isDesign = SettingsManager.getInstance().isDesignMode();
         modeToggleButton.setText(isDesign ? "Go to Play Mode" : "Go to Design Mode");
     }
+
     public String exportToJson() {
         StringBuilder json = new StringBuilder();
         json.append("{\"qubits\":").append(qubits).append(",\"gates\":[");
@@ -751,48 +757,104 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
     }
 
     public void loadPatternFromJson(String json) {
-        stepOperations.clear();
-        clearGrid();
         try {
+            // Parse JSON data into temporary structures ---
             int qIdx = json.indexOf("\"qubits\":") + 9;
             int qEnd = json.indexOf(',', qIdx);
-            qubits = Integer.parseInt(json.substring(qIdx, qEnd));
-            qubitsSpinner.getValueFactory().setValue(qubits);
+            int parsedQubits = Integer.parseInt(json.substring(qIdx, qEnd));
 
-            List<List<GateOperation>> newSteps = new ArrayList<>();
-            for (int i = 0; i < steps; i++) newSteps.add(new ArrayList<>());
+            // A temporary list to hold the parsed operations.
+            List<List<GateOperation>> tempStepOperations = new ArrayList<>();
+            int maxStep = -1;
 
-            String gateArray = json.substring(json.indexOf("["), json.lastIndexOf("]") + 1);
-            String[] gates = gateArray.split("\\},\\{");
+            // Find the gates array within the JSON string.
+            int gatesStart = json.indexOf("\"gates\":[") + 9;
+            int gatesEnd = json.lastIndexOf("]}");
+            String gatesJsonContent = json.substring(gatesStart, gatesEnd);
 
-            for (String g : gates) {
-                String cleaned = g.replace("[", "").replace("]", "").replace("{", "").replace("}", "");
-                String[] parts = cleaned.split(",");
-                String type = parts[0].split(":")[1].replaceAll("\"", "").trim();
-                int step = Integer.parseInt(parts[1].split(":")[1].trim());
-                String[] targetsStr = parts[2].split(":")[1].replaceAll("[\\[\\]]", "").split(",");
+            if (!gatesJsonContent.trim().isEmpty()) {
+                // Split into individual gate objects.
+                String[] gateObjects = gatesJsonContent.replace("{", "").split("},");
+                for (String g : gateObjects) {
+                    String gateStr = g.replace("}", "").trim();
+                    if (gateStr.isEmpty()) continue;
 
-                int[] targets = new int[targetsStr.length];
-                for (int i = 0; i < targetsStr.length; i++) {
-                    targets[i] = Integer.parseInt(targetsStr[i].replaceAll("[^0-9]", ""));
+                    String[] parts = gateStr.split(",");
+                    String type = "";
+                    int step = 0;
+                    int[] targets = new int[0];
+
+                    for (String part : parts) {
+                        String[] kv = part.split(":");
+                        String key = kv[0].replaceAll("\"", "").trim();
+                        String value = kv[1].trim();
+
+                        switch (key) {
+                            case "type":
+                                type = value.replaceAll("\"", "");
+                                break;
+                            case "step":
+                                step = Integer.parseInt(value);
+                                if (step > maxStep) maxStep = step;
+                                break;
+                            case "targets":
+                                String targetsValue = value.replace("[", "").replace("]", "");
+                                if (!targetsValue.isEmpty()) {
+                                    String[] targetsStr = targetsValue.split(",");
+                                    targets = new int[targetsStr.length];
+                                    for (int i = 0; i < targetsStr.length; i++) {
+                                        targets[i] = Integer.parseInt(targetsStr[i].trim());
+                                    }
+                                }
+                                break;
+                        }
+                    }
+
+                    // Ensure our temporary list is large enough
+                    while (tempStepOperations.size() <= step) {
+                        tempStepOperations.add(new ArrayList<>());
+                    }
+                    tempStepOperations.get(step).add(new GateOperation(type.toLowerCase(), targets));
                 }
-
-                newSteps.get(step).add(new GateOperation(type.toLowerCase(), targets));
             }
 
-            stepOperations = newSteps;
+            // Update the panel's state and UI controls
+            this.qubits = parsedQubits;
+            this.steps = (maxStep == -1) ? 1 : maxStep + 1; // Handle empty circuits, ensure at least 1 step
+
+            qubitsSpinner.getValueFactory().setValue(this.qubits);
+            stepsSpinner.getValueFactory().setValue(this.steps);
+
+            // Redraw the grid. This creates a new, empty `stepOperations` of the correct size.
             drawGrid();
-            for (int c = 0; c < stepOperations.size(); c++) {
-                for (GateOperation op : stepOperations.get(c)) {
-                    Button cell = cellButtons[op.qubits[0]][c];
-                    cell.setText(op.gateName.toUpperCase());
-                    cell.getStyleClass().add("gate-" + op.gateName.toUpperCase());
+
+            // Populate the new `stepOperations` and update the UI grid
+            // The `stepOperations` field was just reset by drawGrid(). Now we fill it.
+            for (int c = 0; c < tempStepOperations.size() && c < this.steps; c++) {
+                for (GateOperation op : tempStepOperations.get(c)) {
+                    // Add the operation to the official list
+                    this.stepOperations.get(c).add(op);
+
+                    // Update the button on the grid visually, checking bounds
+                    if (op.qubits.length > 0 && op.qubits[0] < this.qubits && c < this.steps) {
+                        Button cell = cellButtons[op.qubits[0]][c];
+                        cell.setText(op.gateName.toUpperCase());
+                        cell.getStyleClass().add("gate-" + op.gateName.toUpperCase());
+                    }
                 }
             }
+
             patternDisplayArea.setText("Circuit loaded from DB.");
+
         } catch (Exception e) {
             e.printStackTrace();
-            patternDisplayArea.setText("Failed to parse circuit: " + e.getMessage());
+            patternDisplayArea.setText("Failed to parse or load circuit: " + e.getMessage());
+            // On failure, reset to a known good state to prevent instability
+            this.qubits = 3;
+            this.steps = 5;
+            qubitsSpinner.getValueFactory().setValue(this.qubits);
+            stepsSpinner.getValueFactory().setValue(this.steps);
+            drawGrid();
         }
     }
 

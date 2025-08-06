@@ -2,6 +2,9 @@ package qcs.view;
 
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
+import qcs.network.CircuitDataRequest;
+import qcs.network.NetworkClient;
+import qcs.network.ServerResponse;
 import qcs.util.SettingsManager;
 import qcs.util.EventBus;
 
@@ -55,7 +58,11 @@ public class MenuBarPanel implements EventBus.EventListener {
         saveItem.setOnAction(e -> handleSave());
 
         MenuItem exitItem = new MenuItem(bundle.getString("menuExit"));
-        exitItem.setOnAction(e -> System.exit(0));
+        exitItem.setOnAction(e -> {
+            // Cleanly disconnect when exiting
+            NetworkClient.getInstance().disconnect();
+            System.exit(0);
+        });
 
         fileMenu.getItems().addAll(newItem, openItem, saveItem, new SeparatorMenuItem(), exitItem);
 
@@ -77,7 +84,7 @@ public class MenuBarPanel implements EventBus.EventListener {
         // Help Menu
         Menu helpMenu = new Menu(bundle.getString("menuHelp"));
         MenuItem aboutItem = new MenuItem(bundle.getString("about"));
-        aboutItem.setOnAction(e -> handleAbout());  // 🔥 Hook up the "About" action
+        aboutItem.setOnAction(e -> handleAbout());
         MenuItem readMeItem = new MenuItem(bundle.getString("readMe"));  // Placeholder
         helpMenu.getItems().addAll(aboutItem, readMeItem);
 
@@ -89,7 +96,6 @@ public class MenuBarPanel implements EventBus.EventListener {
      */
     private void handleAbout() {
         try {
-            // Assuming README.md is in the main project directory (QCS/README.md)
             String readmeContent = Files.readString(Paths.get("README.md"));
             TextArea textArea = new TextArea(readmeContent);
             textArea.setEditable(false);
@@ -108,20 +114,10 @@ public class MenuBarPanel implements EventBus.EventListener {
         }
     }
 
-    /**
-     * Gets the menuBar component
-     * @return menuBar
-     */
     public MenuBar getMenuBar() {
         return menuBar;
     }
 
-    /**
-     * Event handling.
-     * Updates localization when a "languageChanged" event is detected
-     * Updates bar when "modeToggled" event is detected
-     * @param eventType the type of the event being triggered.
-     */
     @Override
     public void onEvent(String eventType) {
         if ("languageChanged".equals(eventType) || "modeToggled".equals(eventType)) {
@@ -147,7 +143,6 @@ public class MenuBarPanel implements EventBus.EventListener {
     private void handleSave() {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
 
-        // Popup menu with two options
         Alert saveChoice = new Alert(Alert.AlertType.CONFIRMATION);
         saveChoice.setTitle(bundle.getString("menuSave"));
         saveChoice.setHeaderText("Choose Save Method");
@@ -174,21 +169,27 @@ public class MenuBarPanel implements EventBus.EventListener {
         });
     }
 
+    // --- REFACTORED METHOD ---
     private void saveToDatabase() {
-        String circuitJson = gridPanel.exportToJson();
         String username = SettingsManager.getInstance().getUsername();
-
         if (username == null || username.isEmpty()) {
-            showStatus("Error: No user is logged in.");
+            showStatus("Error: Cannot save. No user is logged in.");
             return;
         }
 
-        boolean success = qcs.db.DatabaseManager.saveCircuit(username, circuitJson);
+        String circuitJson = gridPanel.exportToJson();
 
-        if (success) {
+        // Create the correct request object for saving circuit data
+        CircuitDataRequest request = new CircuitDataRequest(username, circuitJson);
+
+        // Send the request using the persistent network client
+        ServerResponse response = NetworkClient.getInstance().sendRequest(request);
+
+        if (response != null && response.isSuccess()) {
             showStatus("✅ Circuit saved to database for user: " + username);
         } else {
-            showStatus("❌ Failed to save circuit to database.");
+            String errorMsg = (response != null) ? response.getMessage() : "No response from server.";
+            showStatus("❌ Failed to save circuit to database. " + errorMsg);
         }
     }
 

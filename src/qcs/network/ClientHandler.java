@@ -4,6 +4,7 @@ import qcs.db.DatabaseManager;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.List;
 
 public class ClientHandler implements Runnable {
@@ -18,13 +19,13 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try {
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
+        try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())){
 
-            DatabaseManager.createCircuitTable(); // Ensure table exists
+            this.out = oos;
+            this.in = ois;
 
-            System.out.println("Client handler started.");
+            System.out.println("Client handler started for: " + socket.getRemoteSocketAddress());
 
             while (true) {
                 Object obj = in.readObject();
@@ -44,9 +45,8 @@ public class ClientHandler implements Runnable {
                             handleLoadCircuit(request);
                             break;
                         case EXIT:
-                            System.out.println("Client requested disconnect.");
-                            socket.close();
-                            return;
+                            System.out.println("Client " + socket.getRemoteSocketAddress() + " requested disconnect.");
+                            return; // Exits the loop and closes resources via try-with-resources.
                         default:
                             sendResponse(false, "Unsupported request type.");
                             break;
@@ -56,8 +56,12 @@ public class ClientHandler implements Runnable {
                 }
             }
 
+        } catch (EOFException | SocketException e) {
+            System.out.println("Client " + socket.getRemoteSocketAddress() + " disconnected.");
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("ClientHandler error: " + e.getMessage());
+            System.err.println("Communication error with client " + socket.getRemoteSocketAddress() + ": " + e.getMessage());
+        } finally {
+            System.out.println("Client handler for " + socket.getRemoteSocketAddress() + " is shutting down.");
         }
     }
 

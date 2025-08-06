@@ -19,7 +19,6 @@ import qcs.util.SettingsManager;
 import qcs.view.*;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * MainDriver serves as the entry point of the QCS application.

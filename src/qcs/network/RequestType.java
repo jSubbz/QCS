@@ -6,7 +6,6 @@ public enum RequestType {
     MESSAGE,
     CIRCUIT_DATA,
     EXIT,
-    SAVE_CIRCUIT,
     LOAD_CIRCUIT
 
 }

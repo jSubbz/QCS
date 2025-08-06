@@ -9,12 +9,11 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import qcs.controller.MainDriver;
 import qcs.network.ClientRequest;
+import qcs.network.NetworkClient;
 import qcs.network.RequestType;
 import qcs.network.ServerResponse;
 import qcs.util.SettingsManager;
 
-import java.io.*;
-import java.net.Socket;
 
 public class LoginScreen extends Application {
 
@@ -22,8 +21,6 @@ public class LoginScreen extends Application {
     private PasswordField passwordField;
     private Button signInButton, signUpButton;
 
-    private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 12345;
 
     @Override
     public void start(Stage primaryStage) {
@@ -69,22 +66,25 @@ public class LoginScreen extends Application {
             return;
         }
 
+        // --- REFACTORED PART ---
+        // 1. Get the singleton instance and connect. This connection will now persist.
+        NetworkClient client = NetworkClient.getInstance();
+        if (!client.connect()) {
+            showAlert("Error", "Could not connect to server.");
+            return;
+        }
+
+        // 2. Create and send the request using the persistent connection.
         ClientRequest request = new ClientRequest(RequestType.LOGIN);
         request.setUsername(user);
         request.setPassword(pass);
+        ServerResponse response = client.sendRequest(request);
+        // --- END REFACTORED PART ---
 
-        ServerResponse response = sendToServer(request);
-
-        if (response == null) {
-            showAlert("Error", "Could not connect to server.");
-        } else if (response.isSuccess()) {
+        if (response != null && response.isSuccess()) {
             showAlert("Success", response.getMessage());
 
-            // ✅ Store username globally
             SettingsManager.getInstance().setUsername(user);
-
-            // 🧪 Optional test: save a dummy circuit
-            MainDriver.sendTestCircuit(user);
 
             try {
                 new MainDriver().start(new Stage());
@@ -94,7 +94,7 @@ public class LoginScreen extends Application {
                 e.printStackTrace();
             }
         } else {
-            showAlert("Login Failed", response.getMessage());
+            showAlert("Login Failed", response != null ? response.getMessage() : "No response from server.");
         }
     }
 
@@ -108,40 +108,23 @@ public class LoginScreen extends Application {
             return;
         }
 
+        // Use the singleton here as well
+        NetworkClient client = NetworkClient.getInstance();
+        if (!client.connect()) {
+            showAlert("Error", "Could not connect to server.");
+            return;
+        }
+
         ClientRequest request = new ClientRequest(RequestType.SIGNUP);
         request.setUsername(user);
         request.setPassword(pass);
 
-        ServerResponse response = sendToServer(request);
+        ServerResponse response = client.sendRequest(request);
 
-        if (response == null) {
-            showAlert("Error", "Could not connect to server.");
-        } else if (response.isSuccess()) {
+        if (response != null && response.isSuccess()) {
             showAlert("Success", response.getMessage());
         } else {
-            showAlert("Sign Up Failed", response.getMessage());
-        }
-    }
-
-    private ServerResponse sendToServer(ClientRequest request) {
-        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
-
-            out.writeObject(request);
-            out.flush();
-
-            Object response = in.readObject();
-            if (response instanceof ServerResponse serverResponse) {
-                return serverResponse;
-            } else {
-                System.err.println("Invalid response from server.");
-                return null;
-            }
-
-        } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Error communicating with server: " + e.getMessage());
-            return null;
+            showAlert("Sign Up Failed", response != null ? response.getMessage() : "No response from server.");
         }
     }
 

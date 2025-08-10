@@ -122,15 +122,16 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         ResourceBundle bundle = SettingsManager.getInstance().getBundle();
 
         qubitsSpinner = new Spinner<>(1, 10, qubits);
-        stepsSpinner = new Spinner<>(1, 20, steps);
+        stepsSpinner  = new Spinner<>(1, 20, steps);
 
         resizeButton = new Button(bundle.getString("resize"));
         resizeButton.setOnAction(e -> {
             qubits = qubitsSpinner.getValue();
-            steps = stepsSpinner.getValue();
+            steps  = stepsSpinner.getValue();
             drawGrid();
-            if (bottomPanel != null)
+            if (bottomPanel != null) {
                 bottomPanel.updateStatus(bundle.getString("resize") + " to " + qubits + " qubits and " + steps + " steps.");
+            }
         });
 
         Button toPlayModeButton = new Button("Go to Play Mode");
@@ -144,7 +145,8 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
 
         newCircuitButton = new Button(bundle.getString("newCircuit"));
         newCircuitButton.setOnAction(e -> {
-            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Start a new circuit? All progress will be lost.",
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Start a new circuit? All progress will be lost.",
                     ButtonType.YES, ButtonType.NO);
             confirm.setTitle("New Circuit");
             var result = confirm.showAndWait();
@@ -166,14 +168,13 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         stepButton = new Button(bundle.getString("step"));
         stepButton.setOnAction(e -> {
             if (simulatedStates.isEmpty()) {
-                bottomPanel.updateStatus("No simulation loaded. Switch to Play Mode first.");
+                if (bottomPanel != null) bottomPanel.updateStatus("No simulation loaded. Switch to Play Mode first.");
                 return;
             }
-
             if (currentStep < simulatedStates.size()) {
                 renderStep(currentStep++);
             } else {
-                bottomPanel.updateStatus("Reached end of simulation.");
+                if (bottomPanel != null) bottomPanel.updateStatus("Reached end of simulation.");
             }
         });
 
@@ -181,7 +182,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         resetButton.setOnAction(e -> {
             currentStep = 0;
             patternDisplayArea.clear();
-            bottomPanel.updateStatus("Simulation reset to step 0.");
+            if (bottomPanel != null) bottomPanel.updateStatus("Simulation reset to step 0.");
         });
 
         simulateButton = new Button("Simulate");
@@ -203,24 +204,16 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             playTimeline.play();
         });
 
-        // ✅ Save to DB
-        // ✅ Save to DB
+        // --- Save to DB ---
         Button saveButton = new Button("Save to DB");
         saveButton.setOnAction(e -> {
             String username = SettingsManager.getInstance().getUsername();
-            // ✅ Add a check for the username to ensure the user is logged in.
             if (username == null || username.isEmpty()) {
                 showAlert("Cannot save: Not logged in.");
                 return;
             }
             String json = exportToJson();
-
-            // The constructor now correctly sets the username in the parent request object.
             CircuitDataRequest saveRequest = new CircuitDataRequest(username, json);
-
-            // ❌ This confusing line is now removed.
-            // saveRequest.setType(RequestType.SAVE_CIRCUIT);
-
             ServerResponse response = NetworkClient.getInstance().sendRequest(saveRequest);
 
             if (response != null && response.isSuccess()) {
@@ -231,7 +224,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             }
         });
 
-        // ✅ Load from DB
+        // --- Load from DB (pretty labels) ---
         Button loadButton = new Button("Load from DB");
         loadButton.setOnAction(e -> {
             ClientRequest loadRequest = new ClientRequest(RequestType.LOAD_CIRCUIT);
@@ -240,40 +233,59 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
             ServerResponse response = NetworkClient.getInstance().sendRequest(loadRequest);
 
             if (response != null && response.isSuccess()) {
-                List<String> circuits = response.getCircuits();
-                if (!circuits.isEmpty()) {
-                    ChoiceDialog<String> dialog = new ChoiceDialog<>(circuits.get(0), circuits);
-                    dialog.setTitle("Load Circuit");
-                    dialog.setHeaderText("Select a saved circuit to load:");
-                    dialog.setContentText("Circuit:");
-
-                    dialog.showAndWait().ifPresent(selected -> {
-                        loadPatternFromJson(selected);
-                        if (bottomPanel != null) {
-                            bottomPanel.updateStatus("Loaded circuit from DB.");
-                        }
-                    });
-                } else {
+                java.util.List<String> circuits = response.getCircuits();
+                if (circuits == null || circuits.isEmpty()) {
                     showAlert("No saved circuits found.");
+                    return;
                 }
+
+                // Build readable labels and keep a reversible map
+                java.util.Map<String, String> labelToJson = new java.util.LinkedHashMap<>();
+                for (String json : circuits) {
+                    String label = summarizeCircuitJson(json); // helper method added earlier
+                    // ensure uniqueness in case summaries collide
+                    String unique = label;
+                    int n = 2;
+                    while (labelToJson.containsKey(unique)) {
+                        unique = label + "  #" + (n++);
+                    }
+                    labelToJson.put(unique, json);
+                }
+
+                ChoiceDialog<String> dialog = new ChoiceDialog<>(
+                        labelToJson.keySet().iterator().next(),
+                        labelToJson.keySet()
+                );
+                dialog.setTitle("Load Circuit");
+                dialog.setHeaderText("Select a saved circuit to load:");
+                dialog.setContentText("Circuit:");
+
+                dialog.showAndWait().ifPresent(selectedLabel -> {
+                    String selectedJson = labelToJson.get(selectedLabel);
+                    loadPatternFromJson(selectedJson);
+                    if (bottomPanel != null) bottomPanel.updateStatus("Loaded circuit from DB.");
+                });
+
             } else {
                 showAlert("Failed to load circuits from server.");
             }
         });
 
-        // ➕ Add save/load to layout
+        // Layout groups
         HBox dbButtons = new HBox(10, saveButton, loadButton);
         dbButtons.setAlignment(Pos.CENTER);
 
         playModeButtons = new HBox(10, newCircuitButton, stepButton, resetButton, simulateButton);
         playModeButtons.setAlignment(Pos.CENTER);
 
-        // Initial visibility
         boolean isDesign = SettingsManager.getInstance().isDesignMode();
         designModeButtons.setVisible(isDesign);
         playModeButtons.setVisible(!isDesign);
 
-        HBox resizeControls = new HBox(10, new Label("Qubits:"), qubitsSpinner, new Label("Steps:"), stepsSpinner, resizeButton);
+        HBox resizeControls = new HBox(10,
+                new Label("Qubits:"), qubitsSpinner,
+                new Label("Steps:"),  stepsSpinner,
+                resizeButton);
         resizeControls.setAlignment(Pos.CENTER);
 
         VBox bottomControls = new VBox(10, resizeControls, dbButtons, designModeButtons, playModeButtons);
@@ -281,6 +293,7 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
 
         panel.setBottom(bottomControls);
     }
+
 
 
 
@@ -886,5 +899,96 @@ public class QuantumCircuitPanel implements EventBus.EventListener {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    // Build a short label like: "3q · 7 gates · 5 steps · [H q0, CX q0->q1, Z q2]"
+    private String summarizeCircuitJson(String json) {
+        try {
+            int qubits = parseIntAfter(json, "\"qubits\":");
+            int gatesCount = countOccurrences(json, "\"type\"");
+            int maxStep = parseMaxIntAfter(json, "\"step\":");
+            String preview = buildGatePreview(json, 3); // first 3 gates
+            return String.format("%dq · %d gates · %d steps · %s",
+                    qubits, gatesCount, Math.max(1, maxStep + 1), preview);
+        } catch (Exception e) {
+            return "(unknown) " + truncate(json, 60);
+        }
+    }
+
+    private int parseIntAfter(String s, String key) {
+        int i = s.indexOf(key);
+        if (i < 0) return 0;
+        i += key.length();
+        while (i < s.length() && Character.isWhitespace(s.charAt(i))) i++;
+        int j = i;
+        while (j < s.length() && (Character.isDigit(s.charAt(j)))) j++;
+        return Integer.parseInt(s.substring(i, j));
+    }
+
+    private int parseMaxIntAfter(String s, String key) {
+        int max = -1, start = 0;
+        while (true) {
+            int i = s.indexOf(key, start);
+            if (i < 0) break;
+            i += key.length();
+            while (i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t')) i++;
+            int j = i;
+            while (j < s.length() && (Character.isDigit(s.charAt(j)))) j++;
+            try { max = Math.max(max, Integer.parseInt(s.substring(i, j))); } catch (Exception ignored) {}
+            start = j;
+        }
+        return max;
+    }
+
+    private int countOccurrences(String s, String needle) {
+        int count = 0, from = 0;
+        while (true) {
+            int i = s.indexOf(needle, from);
+            if (i < 0) break;
+            count++;
+            from = i + needle.length();
+        }
+        return count;
+    }
+
+    private String buildGatePreview(String json, int maxGates) {
+        // very light parser: finds "type":"XYZ" and "targets":[a,b]
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        int from = 0, taken = 0;
+        while (taken < maxGates) {
+            int t = json.indexOf("\"type\"", from);
+            if (t < 0) break;
+            int colon = json.indexOf(':', t);
+            int q1 = json.indexOf('"', colon + 1);
+            int q2 = json.indexOf('"', q1 + 1);
+            String type = (q1 > 0 && q2 > q1) ? json.substring(q1 + 1, q2) : "?";
+
+            int tar = json.indexOf("\"targets\"", q2);
+            int lb = (tar < 0) ? -1 : json.indexOf('[', tar);
+            int rb = (lb < 0) ? -1 : json.indexOf(']', lb);
+            String targets = (lb > 0 && rb > lb) ? json.substring(lb + 1, rb).replaceAll("\\s+", "") : "";
+
+            parts.add(type + " " + formatTargets(targets));
+            taken++;
+            from = (rb > 0 ? rb : q2 + 1);
+        }
+        return "[" + String.join(", ", parts) + "]";
+    }
+
+    private String formatTargets(String targetsCsv) {
+        if (targetsCsv.isEmpty()) return "";
+        String[] nums = targetsCsv.split(",");
+        if (nums.length == 1) return "q" + nums[0];
+        if (nums.length == 2) return "q" + nums[0] + "->q" + nums[1];
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < nums.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append("q").append(nums[i]);
+        }
+        return sb.toString();
+    }
+
+    private String truncate(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max) + "…";
+    }
+
 
 }
